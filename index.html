@@ -1,0 +1,1400 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>칠전팔팔학교 AI 클래스 — 새 덱</title>
+<style>
+  :root {
+    /* 베이스 — 정본 토큰 */
+    --paper:   #FBF9F4;
+    --ink:     #1A1814;
+    --white:   #FFFFFF;
+    --ink-soft:#5A554C;
+
+    /* 파스텔 5색 — 정본 (기존 덱 lilac/blue 보강) */
+    --pink:     #FFB7D5;
+    --mint:     #A9E5C9;
+    --lavender: #C9BCF2;
+    --butter:   #FFDD78;
+    --peach:    #FFB394;
+    --blue:     #9ED5FF;
+
+    /* 파스텔 틴트 */
+    --pink-t:     #FFE3EF;
+    --mint-t:     #DCF3E8;
+    --lavender-t: #ECE6FB;
+    --butter-t:   #FFF1C2;
+    --peach-t:    #FFE0D2;
+    --blue-t:     #DDF0FF;
+
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic",
+            -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    /* 네오브루탈리즘 메커니즘 */
+    --border:  3px solid var(--ink);
+    --shadow:  6px 6px 0 var(--ink);
+    --shadow-lg: 8px 8px 0 var(--ink);
+    --shadow-sm: 4px 4px 0 var(--ink);
+
+    /* 섹션 주색 (JS가 슬라이드에 --accent / --accent-t 주입) */
+    --accent:   var(--lavender);
+    --accent-t: var(--lavender-t);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: #e9e4d6;
+    color: var(--ink);
+    font-family: var(--font);
+    overflow: hidden;
+  }
+
+  /* ===== 고정 스테이지 + 스케일 ===== */
+  /* viewport 채우는 래퍼. 스테이지를 시각 중앙정렬 후 JS scale 적용.
+     주의: scale은 시각 크기만 줄이고 레이아웃 점유는 1600×900 그대로다.
+     그래서 grid place-items:center로 줄이면 작은 창에서 음수 오프셋으로 잘린다.
+     → left/top 50% + translate(-50%,-50%) scale(k) 로 점유와 무관하게 중앙정렬. */
+  #viewport {
+    position: fixed; inset: 0;
+    overflow: hidden;
+  }
+
+  #stage {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 1600px;
+    height: 900px;
+    transform-origin: center center;
+    transform: translate(-50%, -50%) scale(1);
+    background: var(--paper);
+    overflow: hidden;
+    /* 격자 무늬 없음 — 기존 덱 실패 회피. 플랫 단색 */
+  }
+
+  /* 각 슬라이드는 스테이지 위 절대 1600×900. 한 장만 표시 */
+  .slide {
+    position: absolute; inset: 0;
+    width: 1600px; height: 900px;
+    display: none;
+    padding: 64px 110px;
+    overflow: hidden;
+  }
+  .slide.is-active { display: block; }
+
+  /* 섹션 라벨 칩 (좌상단) — 작게, 허용 요소 */
+  .section-chip {
+    position: absolute; top: 40px; left: 56px;
+    display: inline-flex; align-items: center;
+    padding: 8px 16px;
+    background: var(--accent);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 22px; font-weight: 800;
+    letter-spacing: 0.01em;
+    z-index: 5;
+  }
+
+  /* 우하단 페이지 번호 */
+  .page-num {
+    position: absolute; bottom: 34px; right: 56px;
+    display: inline-flex; align-items: baseline; gap: 4px;
+    padding: 6px 14px;
+    background: var(--white);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 24px; font-weight: 900;
+    z-index: 5;
+  }
+  .page-num .cur { font-size: 30px; }
+  .page-num .sep { color: var(--ink-soft); }
+  .page-num .tot { color: var(--ink-soft); font-size: 20px; }
+
+  /* 하단 진행 바 */
+  #progress-track {
+    position: absolute; left: 0; bottom: 0;
+    width: 100%; height: 10px;
+    background: var(--accent-t);
+    border-top: var(--border);
+    z-index: 6;
+  }
+  #progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.3s ease;
+    width: 0;
+  }
+
+  /* ===== 공통 타이포 ===== */
+  /* line-height는 글리프(한글+라틴 ascender/descender)가 line box를 넘치지 않을
+     안전선으로 둔다. 1.0~1.08은 디스플레이에서 미세 세로 overflow를 만든다. */
+  .hero {
+    font-size: 84px; font-weight: 900;
+    line-height: 1.12; letter-spacing: -0.02em;
+    word-break: keep-all; max-width: 16em;
+  }
+  .h1 {
+    font-size: 60px; font-weight: 900;
+    line-height: 1.16; letter-spacing: -0.02em;
+    word-break: keep-all;
+  }
+  .h2 { font-size: 40px; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; word-break: keep-all; }
+  .body { font-size: 32px; font-weight: 600; line-height: 1.45; word-break: keep-all; }
+  .body-lg { font-size: 38px; font-weight: 700; line-height: 1.4; word-break: keep-all; }
+  .label { font-size: 22px; font-weight: 700; line-height: 1.3; letter-spacing: 0.04em; }
+
+  /* 키커 */
+  .kicker {
+    display: inline-flex; align-items: center;
+    padding: 8px 18px;
+    background: var(--accent);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 24px; font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  /* 카드 */
+  .card {
+    background: var(--white);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    padding: 32px;
+  }
+
+  /* ===== layout: cover ===== */
+  /* 포스터는 세로 긴 비율(1152×2048). 폭 기준으로 맞추면 높이가 넘친다.
+     → 우측 컬럼을 포스터 높이(가용 772px)에 맞춘 폭으로 고정하고 세로 정렬. */
+  .cover-grid {
+    display: grid;
+    grid-template-columns: 1fr 440px;
+    gap: 64px;
+    height: 100%;
+    align-items: center;
+  }
+  .cover-left { display: flex; flex-direction: column; gap: 28px; }
+  .cover-sub-chip {
+    align-self: flex-start;
+    padding: 10px 22px;
+    background: var(--butter);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 30px; font-weight: 800;
+  }
+  .cover-title {
+    font-size: 76px; font-weight: 900;
+    line-height: 1.2; letter-spacing: -0.02em;
+    word-break: keep-all;
+  }
+  .cover-classname {
+    font-size: 30px; font-weight: 800; color: var(--ink-soft);
+    letter-spacing: 0.01em;
+  }
+  .cover-outputs {
+    display: flex; gap: 18px; flex-wrap: wrap; margin-top: 6px;
+  }
+  .output-chip {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 16px 22px;
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 28px; font-weight: 800;
+  }
+  .output-chip .step-no {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px;
+    background: var(--ink); color: var(--white);
+    border-radius: 50%;
+    font-size: 20px; font-weight: 900;
+  }
+  .output-chip.c1 { background: var(--mint); }
+  .output-chip.c2 { background: var(--peach); }
+  .output-chip.c3 { background: var(--lavender); }
+  .cover-tail { font-size: 28px; font-weight: 700; color: var(--ink-soft); margin-top: 8px; word-break: keep-all; }
+
+  /* 포스터 프레임 — 어떤 요소도 포스터를 가리지 않음 */
+  .poster-frame {
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    background: var(--white);
+    padding: 0;
+    overflow: hidden;
+    line-height: 0;
+  }
+  .poster-frame img {
+    display: block;
+    width: 100%;           /* 프레임 content box(440 - 테두리)에 맞춤 — scrollWidth 넘침 방지 */
+    height: auto;
+    max-height: 710px;     /* contain-fit 실픽셀 하단 = 450 + H/2 = 805 < 칩 top(실측 812) — 7px 이격. 세로 넘침 방지 */
+    object-fit: contain;
+  }
+
+  /* ===== layout: split (좌 카피 / 우 캡처) ===== */
+  .split-grid {
+    display: grid;
+    grid-template-columns: 640px 1fr;
+    gap: 72px;
+    height: 100%;
+    align-items: center;
+    padding-top: 40px;
+  }
+  .split-left { display: flex; flex-direction: column; gap: 32px; }
+  .split-headline { font-size: 58px; font-weight: 900; line-height: 1.16; letter-spacing: -0.02em; word-break: keep-all; }
+  .split-sub { font-size: 34px; font-weight: 600; line-height: 1.45; color: var(--ink); word-break: keep-all; }
+  .split-tags { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+  .split-tag {
+    padding: 10px 20px;
+    background: var(--accent-t);
+    border: var(--border);
+    font-size: 24px; font-weight: 800;
+  }
+
+  /* 브라우저 창 프레임 컴포넌트 */
+  .browser-frame {
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    background: var(--white);
+    overflow: hidden;
+    width: 100%;
+  }
+  .browser-bar {
+    display: flex; align-items: center; gap: 14px;
+    height: 56px; padding: 0 22px;
+    background: var(--accent);
+    border-bottom: var(--border);
+  }
+  .browser-dots { display: flex; gap: 10px; }
+  .browser-dots span {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2.5px solid var(--ink);
+    background: var(--white);
+  }
+  .browser-url {
+    flex: 1;
+    height: 34px;
+    background: var(--white);
+    border: 2.5px solid var(--ink);
+    border-radius: 4px;
+    display: flex; align-items: center;
+    padding: 0 16px;
+    font-size: 20px; font-weight: 700; color: var(--ink-soft);
+    overflow: hidden; white-space: nowrap;
+  }
+  .browser-body { line-height: 0; background: var(--white); }
+  .browser-body img { display: block; width: 100%; height: auto; }
+
+  /* ===== layout: files (파일 카드 2종) ===== */
+  /* 상단 정렬 레이아웃이라 제목이 섹션칩(top 40, 높이 ~47)과 겹치지 않게 여백 확보 */
+  .files-head { margin-top: 56px; margin-bottom: 40px; }
+  .files-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 44px;
+  }
+  .file-card {
+    background: var(--white);
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .file-card .filebar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 22px 28px;
+    border-bottom: var(--border);
+    font-size: 36px; font-weight: 900;
+    letter-spacing: -0.01em;
+  }
+  .file-card.f1 .filebar { background: var(--mint); }
+  .file-card.f2 .filebar { background: var(--butter); }
+  .file-card .fileicon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 48px; height: 48px;
+    background: var(--ink); color: var(--white);
+    font-size: 22px; font-weight: 900;
+    flex-shrink: 0;
+  }
+  .file-card .filedesc {
+    padding: 22px 28px 6px;
+    font-size: 28px; font-weight: 700; color: var(--ink-soft);
+    word-break: keep-all;
+  }
+  .file-card ul { list-style: none; padding: 14px 28px 30px; display: flex; flex-direction: column; gap: 16px; }
+  .file-card li {
+    display: flex; align-items: flex-start; gap: 16px;
+    font-size: 29px; font-weight: 700; line-height: 1.3; word-break: keep-all;
+  }
+  .file-card li .bullet {
+    flex-shrink: 0; margin-top: 4px;
+    width: 26px; height: 26px;
+    border: 3px solid var(--ink);
+  }
+  .file-card.f1 li .bullet { background: var(--mint); }
+  .file-card.f2 li .bullet { background: var(--butter); }
+  .files-foot {
+    margin-top: 36px;
+    font-size: 28px; font-weight: 700; color: var(--ink-soft);
+    word-break: keep-all;
+  }
+
+  /* ===== 공통: 상단 정렬 장의 헤더 (섹션칩과 겹침 방지) ===== */
+  .top-head { margin-top: 52px; margin-bottom: 36px; }
+  .top-head .lead { margin-top: 16px; font-size: 32px; font-weight: 600; color: var(--ink-soft); word-break: keep-all; max-width: 30em; }
+
+  /* ===== layout: statement (전환·프레임 한 메시지) ===== */
+  .stmt-wrap {
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    gap: 32px; padding-right: 60px;
+  }
+  .stmt-kicker {
+    align-self: flex-start;
+    padding: 10px 22px;
+    background: var(--accent);
+    border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 28px; font-weight: 800;
+  }
+  .stmt-head {
+    font-size: 76px; font-weight: 900; line-height: 1.2;
+    letter-spacing: -0.02em; word-break: keep-all; max-width: 17em;
+  }
+  .stmt-head em { font-style: normal; background: var(--accent); padding: 0 12px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .stmt-sub { font-size: 36px; font-weight: 600; line-height: 1.45; color: var(--ink-soft); word-break: keep-all; max-width: 24em; }
+  .stmt-tail {
+    display: inline-flex; align-items: center; gap: 14px;
+    padding: 16px 26px; background: var(--white);
+    border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 30px; font-weight: 800; word-break: keep-all;
+  }
+  .stmt-tail .arr { font-size: 32px; }
+
+  /* ===== layout: agenda (3덩어리 진행) ===== */
+  .agenda-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px; margin-top: 8px; }
+  .agenda-card {
+    background: var(--white); border: var(--border); box-shadow: var(--shadow);
+    padding: 36px 32px; display: flex; flex-direction: column; gap: 18px;
+    min-height: 440px;
+  }
+  .agenda-card .a-time {
+    align-self: flex-start;
+    padding: 10px 20px; border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 28px; font-weight: 900;
+  }
+  .agenda-card.a1 .a-time { background: var(--lavender); }
+  .agenda-card.a2 .a-time { background: var(--butter); }
+  .agenda-card.a3 .a-time { background: var(--peach); }
+  .agenda-card .a-title { font-size: 40px; font-weight: 900; line-height: 1.15; letter-spacing: -0.01em; word-break: keep-all; }
+  .agenda-card .a-desc { font-size: 28px; font-weight: 600; line-height: 1.4; color: var(--ink-soft); word-break: keep-all; }
+  .agenda-foot { margin-top: 38px; font-size: 30px; font-weight: 700; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+  .agenda-foot em { font-style: normal; background: var(--accent); padding: 2px 10px; }
+
+  /* ===== layout: flow (전환 도해: 전 → 후) ===== */
+  /* height 고정: 슬라이드(900) - 상단 패딩(64) - 헤더(약 122) - 하단 여백(약 70) ≈ 590.
+     height:100%는 블록 흐름에서 헤더 위치를 무시해 세로 넘침을 만든다 → 고정값으로 둔다. */
+  .flow-wrap { display: flex; align-items: stretch; justify-content: center; gap: 40px; height: 576px; padding: 22px 0 0; }
+  .flow-node {
+    flex: 1; max-width: 480px;
+    background: var(--white); border: var(--border); box-shadow: var(--shadow-lg);
+    padding: 32px 32px; display: flex; flex-direction: column; gap: 16px;
+    justify-content: center; overflow: hidden;
+  }
+  .flow-node.before { background: var(--paper); }
+  .flow-node.after  { background: var(--accent-t); }
+  .flow-node .fn-tag {
+    align-self: flex-start; padding: 8px 18px;
+    border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 24px; font-weight: 800; background: var(--white);
+  }
+  .flow-node.after .fn-tag { background: var(--accent); }
+  .flow-node .fn-title { font-size: 38px; font-weight: 900; line-height: 1.18; word-break: keep-all; }
+  .flow-node .fn-desc { font-size: 28px; font-weight: 600; line-height: 1.4; color: var(--ink-soft); word-break: keep-all; }
+  /* 말풍선 (before가 메시지일 때) */
+  .fn-bubble {
+    background: var(--mint-t); border: var(--border);
+    border-radius: 18px 18px 18px 4px; padding: 22px 26px;
+    font-size: 27px; font-weight: 600; line-height: 1.4; color: var(--ink); word-break: keep-all;
+  }
+  .fn-bubble + .fn-bubble { margin-top: 4px; }
+  /* 작은 페이지 프레임 (after가 사이트일 때) */
+  .fn-page {
+    border: var(--border); background: var(--white); overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .fn-page .fp-bar { height: 30px; background: var(--accent); border-bottom: 2.5px solid var(--ink); display: flex; align-items: center; gap: 7px; padding: 0 12px; }
+  .fn-page .fp-bar span { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--ink); background: var(--white); }
+  .fn-page .fp-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .fn-page .fp-h { height: 22px; width: 60%; background: var(--ink); }
+  .fn-page .fp-langs { display: flex; gap: 8px; }
+  .fn-page .fp-langs b { font-size: 17px; font-weight: 800; padding: 3px 10px; border: 2px solid var(--ink); background: var(--accent-t); }
+  .fn-page .fp-line { height: 13px; background: #ddd6c8; }
+  .fn-page .fp-line.s { width: 78%; }
+  .flow-arrow { font-size: 64px; font-weight: 900; color: var(--ink); flex-shrink: 0; }
+
+  /* ===== layout: cards (카드 N개 그리드) ===== */
+  .cards-grid { display: grid; gap: 30px; margin-top: 4px; }
+  .cards-grid.c2 { grid-template-columns: 1fr 1fr; }
+  .cards-grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .cards-grid.c4 { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid.c6 { grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  /* 6칸(3열2행)은 밀도가 높으므로 카드 패딩·폰트를 한 단계 줄여 세로 넘침 방지 */
+  .cards-grid.c6 .gcard { padding: 24px 26px; gap: 10px; }
+  .cards-grid.c6 .gc-title { font-size: 31px; }
+  .cards-grid.c6 .gc-desc { font-size: 26px; }
+  .cards-grid.c6 .gc-no { min-width: 44px; height: 44px; font-size: 22px; }
+  .gcard {
+    background: var(--white); border: var(--border); box-shadow: var(--shadow);
+    padding: 30px 32px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .gcard .gc-no {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 50px; height: 50px; padding: 0 14px; flex-shrink: 0;
+    background: var(--accent); border: var(--border);
+    font-size: 25px; font-weight: 900; line-height: 1; white-space: nowrap;
+  }
+  .gcard .gc-title { font-size: 33px; font-weight: 900; line-height: 1.2; word-break: keep-all; }
+  .gcard .gc-desc { font-size: 28px; font-weight: 600; line-height: 1.4; color: var(--ink-soft); word-break: keep-all; }
+  .gcard .gc-head { display: flex; align-items: center; gap: 16px; }
+  .cards-foot { margin-top: 34px; font-size: 30px; font-weight: 700; line-height: 1.5; color: var(--ink); word-break: keep-all; }
+  .cards-foot em { font-style: normal; background: var(--accent); padding: 2px 10px; }
+
+  /* ===== layout: tracks (A/B/C 3트랙) ===== */
+  .tracks-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 8px; }
+  .track {
+    border: var(--border); box-shadow: var(--shadow); background: var(--white);
+    display: flex; flex-direction: column; overflow: hidden; min-height: 470px;
+  }
+  .track .t-band {
+    padding: 22px 28px; border-bottom: var(--border);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .track.tA .t-band { background: var(--mint); }
+  .track.tB .t-band { background: var(--butter); }
+  .track.tC .t-band { background: var(--peach); }
+  .track .t-letter {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 56px; height: 56px; flex-shrink: 0;
+    background: var(--ink); color: var(--white);
+    font-size: 32px; font-weight: 900; border-radius: 50%;
+  }
+  .track .t-name { font-size: 30px; font-weight: 900; line-height: 1.15; word-break: keep-all; }
+  .track .t-cond { padding: 22px 28px 8px; font-size: 27px; font-weight: 700; color: var(--ink-soft); word-break: keep-all; }
+  .track .t-path { padding: 6px 28px 30px; font-size: 30px; font-weight: 800; line-height: 1.32; word-break: keep-all; margin-top: auto; }
+  .track .t-path .pin { display: block; font-size: 22px; font-weight: 700; color: var(--ink-soft); margin-bottom: 6px; }
+
+  /* ===== layout: steps (클릭 순서 안내도) ===== */
+  .steps-wrap { margin-top: 44px; }
+  .steps-row { display: flex; align-items: stretch; gap: 0; }
+  .step-card {
+    flex: 1; background: var(--white); border: var(--border); box-shadow: var(--shadow);
+    padding: 28px 24px; display: flex; flex-direction: column; gap: 14px;
+  }
+  .step-card .s-no {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 52px; height: 52px;
+    background: var(--accent); border: var(--border);
+    font-size: 28px; font-weight: 900;
+  }
+  .step-card .s-label {
+    font-size: 30px; font-weight: 900; line-height: 1.2; word-break: keep-all;
+  }
+  .step-card .s-label code {
+    font-family: ui-monospace, Menlo, monospace;
+    background: var(--ink); color: var(--white);
+    padding: 2px 10px; font-size: 27px; font-weight: 800;
+    border-radius: 4px; display: inline-block; line-height: 1.35;
+  }
+  .step-card .s-note { font-size: 24px; font-weight: 600; color: var(--ink-soft); line-height: 1.35; word-break: keep-all; }
+  .step-arrow {
+    display: flex; align-items: center; justify-content: center;
+    width: 48px; flex-shrink: 0;
+    font-size: 44px; font-weight: 900; color: var(--ink);
+  }
+  .steps-banner {
+    margin-top: 36px; padding: 22px 30px;
+    background: var(--accent-t); border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 30px; font-weight: 800; word-break: keep-all;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .steps-banner .live { display:inline-flex; align-items:center; gap:10px; padding:6px 16px; background:var(--accent); border:2.5px solid var(--ink); font-size:24px; font-weight:900; flex-shrink:0; }
+  .steps-banner code { font-family: ui-monospace, Menlo, monospace; background: var(--white); border: 2.5px solid var(--ink); padding: 2px 10px; font-size: 26px; font-weight: 800; }
+
+  /* ===== layout: shot (데모 캡처 단독, 창 프레임) ===== */
+  .shot-grid {
+    display: grid; grid-template-columns: 560px 1fr; gap: 64px;
+    height: 100%; align-items: center; padding-top: 36px;
+  }
+  .shot-left { display: flex; flex-direction: column; gap: 28px; }
+  .shot-head { font-size: 56px; font-weight: 900; line-height: 1.16; letter-spacing: -0.02em; word-break: keep-all; }
+  .shot-list { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+  .shot-list li { display: flex; align-items: flex-start; gap: 14px; font-size: 30px; font-weight: 700; line-height: 1.3; word-break: keep-all; }
+  .shot-list li .n { flex-shrink: 0; display:inline-flex; align-items:center; justify-content:center; width: 38px; height: 38px; background: var(--accent); border: 2.5px solid var(--ink); font-size: 22px; font-weight: 900; }
+  .shot-frame-wrap { height: 100%; display: flex; align-items: center; }
+  .shot-frame {
+    border: var(--border); box-shadow: var(--shadow-lg);
+    background: var(--white); overflow: hidden; width: 100%;
+    max-height: 800px;
+  }
+  .shot-frame .sb { display: flex; align-items: center; gap: 12px; height: 52px; padding: 0 20px; background: var(--accent); border-bottom: var(--border); }
+  .shot-frame .sb-dots { display: flex; gap: 9px; }
+  .shot-frame .sb-dots span { width: 16px; height: 16px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--white); }
+  .shot-frame .sb-url { flex: 1; height: 32px; background: var(--white); border: 2.5px solid var(--ink); border-radius: 4px; display: flex; align-items: center; padding: 0 14px; font-size: 19px; font-weight: 700; color: var(--ink-soft); overflow: hidden; white-space: nowrap; }
+  /* 데모 캡처는 세로로 길다 → 창 프레임 안에서 상단만 보이게 잘라 담는다(스크롤 없는 정적 미리보기) */
+  .shot-frame .sb-body { line-height: 0; background: var(--white); height: 560px; overflow: hidden; }
+  .shot-frame .sb-body img { display: block; width: 100%; height: 560px; object-fit: cover; object-position: top center; }
+
+  /* ===== layout: before-after (전/후 캡처 비교) ===== */
+  /* height 고정: 헤더(h1) 아래 남는 공간. height:100%는 블록 흐름에서 헤더 위치를 무시해 넘친다. */
+  .ba-grid { display: grid; grid-template-columns: 1fr 96px 1fr; gap: 0; align-items: center; height: 620px; padding: 26px 0 0; }
+  .ba-col { display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+  .ba-tag {
+    align-self: flex-start; padding: 10px 22px;
+    border: var(--border); box-shadow: var(--shadow-sm);
+    font-size: 26px; font-weight: 900;
+  }
+  .ba-col.before .ba-tag { background: var(--white); }
+  .ba-col.after  .ba-tag { background: var(--accent); }
+  .ba-frame {
+    border: var(--border); box-shadow: var(--shadow); background: var(--white);
+    overflow: hidden;
+  }
+  .ba-frame .baf-bar { height: 38px; background: var(--accent); border-bottom: 2.5px solid var(--ink); display: flex; align-items: center; gap: 8px; padding: 0 14px; }
+  .ba-frame .baf-bar span { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--ink); background: var(--white); }
+  .ba-frame .baf-body { line-height: 0; background: var(--white); height: 392px; overflow: hidden; }
+  .ba-frame .baf-body img { display: block; width: 100%; height: 392px; object-fit: cover; object-position: top center; }
+  .ba-cap { font-size: 27px; font-weight: 700; color: var(--ink); word-break: keep-all; }
+  .ba-mid { display: flex; align-items: center; justify-content: center; font-size: 60px; font-weight: 900; color: var(--ink); }
+
+  /* ===== layout: placeholder (미완성 장) ===== */
+  .ph-wrap {
+    height: 100%;
+    display: flex; flex-direction: column;
+    align-items: flex-start; justify-content: center;
+    gap: 28px;
+  }
+  .ph-no {
+    font-size: 120px; font-weight: 900; line-height: 1.2;
+    color: var(--accent);
+    -webkit-text-stroke: 3px var(--ink);
+    letter-spacing: -0.03em;
+  }
+  .ph-title { font-size: 56px; font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; word-break: keep-all; max-width: 22em; }
+  .ph-badge {
+    display: inline-flex; align-items: center; gap: 12px;
+    padding: 14px 26px;
+    background: var(--white);
+    border: var(--border);
+    box-shadow: var(--shadow-sm);
+    font-size: 28px; font-weight: 800; color: var(--ink-soft);
+  }
+  .ph-badge .dot { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 2.5px solid var(--ink); }
+
+  /* ===== audit 리포트 ===== */
+  #audit-report {
+    position: fixed; inset: 0;
+    z-index: 9999;
+    margin: 0; padding: 24px;
+    background: #fff; color: #111;
+    font: 14px/1.5 ui-monospace, Menlo, monospace;
+    white-space: pre-wrap;
+    overflow: auto;
+    display: none;
+  }
+  body.audit-mode #audit-report { display: block; }
+  body.audit-mode #viewport { opacity: 0; }
+
+  /* ===== reduced motion ===== */
+  @media (prefers-reduced-motion: reduce) {
+    #progress-fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="stage">
+      <div id="progress-track"><div id="progress-fill"></div></div>
+    </div>
+  </div>
+  <pre id="audit-report"></pre>
+
+<script>
+/* =========================================================================
+   데이터 주도 슬라이드 덱
+   - slides[] : {no, section, layout, ...콘텐츠, note}
+   - note 는 제작 메모 — 절대 렌더링하지 않는다
+   - layout별 렌더 함수
+   ========================================================================= */
+
+const ASSETS = {
+  poster: "assets/poster-drafts/final/poster-chiljeonpalpal-ai-class-final-2026-06-05.png",
+  chatgpt:    "assets/slide-redesign/services/chatgpt.jpg",
+  claudecode: "assets/slide-redesign/services/claudecode.jpg",
+  codex:      "assets/slide-redesign/services/codex.jpg",
+  gamma:      "assets/slide-redesign/services/gamma.jpg",
+  runway:     "assets/slide-redesign/services/runway.jpg",
+  suno:       "assets/slide-redesign/services/suno.jpg",
+  demoKo:    "assets/slide-redesign/demo/demo-page-ko.png",
+  demoMulti: "assets/slide-redesign/demo/demo-page-multi.png",
+};
+
+/* 섹션 → 주색 매핑 (정본 §2 챕터별 색 배정 정신 계승) */
+const SECTION_THEME = {
+  "오프닝":      { a: "var(--lavender)", t: "var(--lavender-t)" },
+  "서비스 지도": { a: "var(--mint)",     t: "var(--mint-t)" },
+  "로컬 사례":   { a: "var(--mint)",     t: "var(--mint-t)" },
+  "실습 전환":   { a: "var(--butter)",   t: "var(--butter-t)" },
+  "자료 선택":   { a: "var(--butter)",   t: "var(--butter-t)" },
+  "기기 점검":   { a: "var(--butter)",   t: "var(--butter-t)" },
+  "작업 폴더":   { a: "var(--peach)",    t: "var(--peach-t)" },
+  "Codex 실습":  { a: "var(--peach)",    t: "var(--peach-t)" },
+  "사람의 판단": { a: "var(--peach)",    t: "var(--peach-t)" },
+  "첫 페이지":   { a: "var(--peach)",    t: "var(--peach-t)" },
+  "공개":        { a: "var(--peach)",    t: "var(--peach-t)" },
+  "GitHub Pages":{ a: "var(--peach)",    t: "var(--peach-t)" },
+  "다시 수정":   { a: "var(--peach)",    t: "var(--peach-t)" },
+  "다국어 완성": { a: "var(--peach)",    t: "var(--peach-t)" },
+  "마무리":      { a: "var(--pink)",     t: "var(--pink-t)" },
+};
+
+/* 25장 — 새 번호 1..25. 샘플 3장(1·4·15)만 완전, 나머지는 placeholder */
+const slides = [
+  {
+    no: 1, section: "오프닝", layout: "cover",
+    title: "챗지피티의 시대,\n그리고 클로드 코드의 시대",
+    subtitle: "물어보는 AI에서 맡겨보는 AI로",
+    className: "칠전팔팔학교 AI 클래스",
+    outputs: ["한국어 첫 페이지", "공개 링크", "다국어 웹사이트"],
+    tail: "내가 해온 일과 좋아하는 것을, 더 많은 사람에게 보여주는 3시간",
+    poster: ASSETS.poster,
+    note: "표지. '오늘 끝나면 보낼 수 있는 링크 하나를 남긴다'는 약속만 — 기술 설명 금지. 포스터의 텍스트를 어떤 요소도 가리지 않는다(분리 2단 레이아웃).",
+  },
+  {
+    no: 2, section: "오프닝", layout: "agenda",
+    title: "오늘 3시간, 세 덩어리만 따라갑니다",
+    lead: "강의는 30분뿐. 나머지는 손으로 만지는 시간입니다.",
+    items: [
+      { time: "30분", title: "강의", desc: "AI가 어떻게 달라졌는지\n— 보기만 합니다" },
+      { time: "30분", title: "쉼 · 점검", desc: "자료 하나 고르고\n계정·기기를 맞춥니다" },
+      { time: "약 2시간", title: "실습", desc: "내 자료로 만들고,\n올리고, 다시 고칩니다" },
+    ],
+    foot: "오늘 끝나면 <em>보낼 수 있는 링크 하나</em>가 남습니다.",
+    footHtml: '오늘 끝나면 <em>보낼 수 있는 링크 하나</em>가 남습니다.',
+    note: "심사표 새2(수업 진행). 저녁 수업 에너지 배분('강의는 30분뿐')을 미리 알려주는 장. agenda 3덩어리. lesson-plan §0·§2.",
+  },
+  {
+    no: 3, section: "오프닝", layout: "statement",
+    kicker: "오늘의 중심",
+    head: "오늘의 주인공은 AI가 아니라\n여러분이 이미 해온 일입니다",
+    headHtml: '오늘의 주인공은 AI가 아니라<br>여러분이 <em>이미 해온 일</em>입니다',
+    sub: "콘텐츠는 새로 만들어야만 생기지 않습니다.\n블로그 글 하나, 메뉴판 사진 하나 — 그게 오늘의 재료입니다.",
+    tail: "내 자료가 오늘의 재료다",
+    note: "심사표 새3(내 자료 프레임, 03→02 흡수). 척추 '존재 이유'의 수강생 버전 — 안심을 주는 장. statement 한 메시지. 자료 목록 나열 금지(14·19에서 행동으로 다시 나옴).",
+  },
+  {
+    no: 4, section: "서비스 지도", layout: "split",
+    headline: "ChatGPT는\n대화창을 넘어섰다",
+    sub: "처음 만난 AI는 대화창이었다.\n이제는 결과물을 옆에 펼쳐 보여준다.",
+    tags: ["글", "표", "차트", "페이지", "시각화"],
+    capture: ASSETS.chatgpt,
+    captureUrl: "chatgpt.com",
+    note: "좌측은 §2.1 압축 카피(핵심 한 줄 + 보조 1~2줄). 우측은 실제 ChatGPT 캡처를 브라우저 창 프레임에. 비율 왜곡 금지(width 100%, height auto). 04A(실화면 인상) 흡수.",
+  },
+  {
+    no: 5, section: "서비스 지도", layout: "flow",
+    title: "디자인은 빈 화면이 아니라\n마음에 든 예시에서 시작한다",
+    before: { tag: "막막함", title: "빈 화면 앞에서\n무엇부터 그릴지 막막하다", desc: "디자인 감각이 없어서가 아니다 —\n출발점이 비어 있을 뿐이다." },
+    after:  { tag: "출발점", title: "마음에 든 예시 하나를\n내 메뉴판 · 포스터로 바꾼다", desc: "포스터, 카드뉴스, 메뉴판 —\n내 가게 일이 그 칸에 들어간다." },
+    note: "심사표 새5(지도: 디자인, 기존06). 수강생 실제 일(가게·공방)이 걸리는 칸. designTransform 개념 도해 → flow로. 캡처 미보유(Canva류). lesson-plan §2 0:08-0:15.",
+  },
+  {
+    no: 6, section: "서비스 지도", layout: "split",
+    headline: "내 일을 설명할 때,\n빈 PPT 앞에서 멈추지 않는다",
+    sub: "지원사업 발표, 제안서, 소개 자료 —\n설명해야 하는 순간은 생각보다 자주 온다.",
+    tags: ["발표 슬라이드", "제안서", "소개 페이지"],
+    capture: ASSETS.gamma,
+    captureUrl: "gamma.app",
+    note: "심사표 새6(지도: 슬라이드·문서, 기존07). Gamma 실캡처 보유 — split. 서비스 지도 4칸 중 가장 약하나 keep 확정. lesson-plan §2.",
+  },
+  {
+    no: 7, section: "서비스 지도", layout: "flow",
+    title: "좋은 소개는 혼자 쓰는 글이 아니라\n읽고 다시 쓰는 글이다",
+    before: { tag: "혼자 쓰기", title: "내 머릿속 말만으로\n소개글을 쥐어짠다", desc: "막상 쓰려면 무슨 말을 더해야\n할지 떠오르지 않는다." },
+    after:  { tag: "읽혀서 쓰기", title: "참고 자료를 AI에게 읽히고\n그 위에서 다시 쓴다", desc: "오늘 실습의 핵심 감각 —\n자료를 읽혀서 시킨다." },
+    note: "심사표 새7(지도: 리서치, 기존08). 실습1(Codex가 폴더를 읽는다)의 복선. notebook 목업 → flow 개념 도해. '읽혀서 시킨다' 감각과 직결. lesson-plan §2.",
+  },
+  {
+    no: 8, section: "서비스 지도", layout: "split",
+    headline: "사진 한 장도\n홍보의 씨앗이 된다",
+    sub: "오늘 영상은 만들지 않는다.\n다만 사진 한 장이 어디까지 가는지는 보고 간다.",
+    tags: ["사진", "→ 짧은 영상", "→ 배경 음악"],
+    capture: ASSETS.runway,
+    captureUrl: "runwayml.com",
+    note: "심사표 새8(지도: 사진→영상·음악, 기존09). 내 휴대폰 사진이 들어갈 칸 — 새12 '대표 사진 1장'의 복선. Runway 실캡처. '오늘 안 만들지만 보고 간다' 프레임. lesson-plan §2.",
+  },
+  {
+    no: 9, section: "로컬 사례", layout: "statement",
+    kicker: "많이 알수록 막히는 곳",
+    head: "도구는 만들어준다.\n그런데 만든 것을 이어가진 못한다",
+    headHtml: '도구는 만들어준다.<br>그런데 <em>만든 것을 이어가진</em> 못한다',
+    sub: "서비스가 늘수록 자료와 결과물이 섬처럼 흩어진다.\n에이전트는 그 조각들을 한 작업대 위에 올린다.",
+    tail: "AI가 일할 작업대 — 그게 에이전트다",
+    note: "심사표 새9(막힘+에이전트, 기존11, 05 흡수). 강의 개념 핵심. 챗봇↔에이전트 차이, 오늘 도구(Codex)의 정체. 척추 '들고 나가는 것 2'와 직결. statement. lesson-plan §2 0:15-0:24.",
+  },
+  {
+    no: 10, section: "로컬 사례", layout: "flow",
+    title: "멀리 있는 이야기가 아니다 —\n반복하던 안내가 웹페이지가 됐다",
+    before: { tag: "전", title: "손님에게 보내던\n맛집 안내 메시지", bubbles: ["영업시간은…", "주차는 골목 안쪽에…", "Where is the entrance?"] },
+    after:  { tag: "후", title: "다국어 안내 사이트\n하나로 모였다", page: ["한국어", "EN", "日本語"] },
+    note: "심사표 새10(실사례 스테이이고, 13A 흡수). 도해: 맛집 메시지(말풍선)→다국어 안내 사이트(페이지 프레임). 리허설 때 강사 실캡처로 교체 가능한 구조. 실제 화면은 강사 라이브 3분이 맡음. lesson-plan §2 0:24-0:28.",
+  },
+  {
+    no: 11, section: "실습 전환", layout: "statement",
+    kicker: "오늘의 길",
+    head: "지도는 봤습니다.\n이제 이 한 길만 따라갑니다",
+    headHtml: '지도는 봤습니다.<br>이제 <em>이 한 길</em>만 따라갑니다',
+    sub: "자료 찾기 → 브리프 → 한국어 페이지 → 1차 공개 → 다국어.\n만들고, 올리고, 다시 고칩니다.",
+    tail: "내 취향과 노력을, 더 많은 사람에게",
+    note: "심사표 새11(오늘의 길, 기존12, 10 흡수). 강의 마지막 장. 깔때기 마무리('오늘은 하나만'). statement. lesson-plan §2 0:28-0:30. 다음 장(12)부터 실습 전환.",
+  },
+  {
+    no: 12, section: "자료 선택", layout: "cards",
+    title: "내 경우엔 무엇이 될까 — 하나만 고릅니다",
+    lead: "완벽한 자료가 아니어도 됩니다. 흩어진 것 중 하나면 충분합니다.",
+    cards: [
+      { no: "1", title: "글 하나", desc: "블로그·인스타 소개글,\n예전에 써둔 안내문" },
+      { no: "2", title: "사진 하나", desc: "휴대폰 속 메뉴판,\n작업물, 공간 사진" },
+      { no: "3", title: "메모 하나", desc: "카카오톡·밴드에\n반복해 보내던 안내" },
+    ],
+    foot: "고른 자료 + <em>대표 사진 1장</em>을 노트북으로 가져옵니다 — 못 옮기면 휴대폰으로 보내도 됩니다.",
+    footHtml: '고른 자료 + <em>대표 사진 1장</em>을 노트북으로 — 못 옮기면 휴대폰으로 보내도 됩니다.',
+    note: "심사표 새12(자료 하나+사진1장, 기존14, 17 흡수). 휴식 블록 — 쉬는 동안 화면에 떠 있을 장. 휴대폰 전송 경로(C트랙 복선) 포함. 부끄럽게 만들지 않는 톤. lesson-plan §3.",
+  },
+  {
+    no: 13, section: "기기 점검", layout: "tracks",
+    title: "같은 수업, 세 갈래 길로 갑니다",
+    lead: "막힘은 실패가 아니라 오늘 다룰 현실입니다 — 지금 상태에 맞춰 출발합니다.",
+    tracks: [
+      { name: "다 준비됨", cond: "AI 도구 · GitHub\n둘 다 열린다", path: "본인 GitHub Pages로\n바로 공개" },
+      { name: "GitHub만 막힘", cond: "AI 도구는 되는데\nGitHub가 안 열린다", path: "HTML을 만들어\n수업 갤러리로 공개" },
+      { name: "기기가 불안정", cond: "계정·기기 문제로\nAI 도구도 불안정", path: "휴대폰으로 보낸 내 자료를\n강사 화면에서 함께 작업" },
+    ],
+    note: "심사표 새13(A/B/C 트랙, 기존18). 점검 블록 20분 유일한 본장. C트랙=휴대폰 자료+강사 화면(샘플 관람 금지). lesson-plan §4 클리닉 카드 언어. 척추 '현실 제약'(설문 최저점) 대응.",
+  },
+  {
+    no: 14, section: "작업 폴더", layout: "flow",
+    title: "오늘 폴더는, AI가 읽을 작업 바구니입니다",
+    before: { tag: "전", title: "여기저기\n흩어진 자료", desc: "사진은 휴대폰, 글은 블로그,\n메모는 카카오톡 — 따로 논다." },
+    after:  { tag: "후", title: "한 폴더에\n모아 둔다", desc: "AI가 한 번에 읽고 작업할\n수 있는 작업 바구니가 된다." },
+    note: "심사표 새14(작업 폴더, 기존19). 척추 '들고 나가는 것 2'의 앞 절반(모으기). 다음 장 15(시키기)와 행동이 다름 — merge 안 함. flow 도해. lesson-plan §5 1:03-1:12.",
+  },
+  {
+    no: 15, section: "Codex 실습", layout: "files",
+    title: "Codex가 먼저 만드는 파일 2종",
+    intro: "사람이 처음부터 정리하지 않는다 — Codex에게 먼저 시킨다.",
+    files: [
+      {
+        name: "materials-inventory.md", icon: "①", desc: "오늘 폴더를 읽고 쓴 자료 목록",
+        items: ["어떤 자료가 있는지", "무엇이 부족한지", "어떤 순서로 쓰면 좋을지"],
+      },
+      {
+        name: "creator-brief.md", icon: "②", desc: "내 소개의 뼈대 — 작업 브리프",
+        items: ["무엇을 / 누구에게", "핵심 매력과 꼭 넣을 정보", "공개 불가 · 사람이 확인할 사실"],
+      },
+    ],
+    foot: "두 파일은 실습 내내 참조한다 — 사람은 AI가 모르는 맥락만 고친다.",
+    note: "slide-content §20·21 수확. 실습 중 참조용이라 파일명·항목 큰 글씨. 21을 흡수해 두 파일 나란히. 파일 카드 = 개념 도해.",
+  },
+  {
+    no: 16, section: "사람의 판단", layout: "cards",
+    title: "AI가 모르는 건, 사람이 고릅니다",
+    lead: "긴 글을 쓰지 않습니다. AI가 모르는 네 가지만 골라 답하면 됩니다.",
+    cards: [
+      { no: "누구", title: "소개할 대상", desc: "가게 · 공방 · 작품 ·\n모임 · 강의 · 블로그" },
+      { no: "독자", title: "보여줄 사람", desc: "동네 손님 · 외국인 손님 ·\n기존 고객 · 지인" },
+      { no: "말투", title: "어떤 말투로", desc: "다정한 동네 소개 ·\n차분한 안내 · 작가 노트" },
+      { no: "비공개", title: "공개 불가 정보", desc: "휴대폰 번호 · 집 주소 ·\n가격 · 얼굴 사진" },
+    ],
+    foot: "판단은 사람이, 형식은 AI가 — <em>고르기만 하면 됩니다</em>.",
+    footHtml: '판단은 사람이, 형식은 AI가 — <em>고르기만 하면 됩니다</em>.',
+    note: "심사표 새16(사람의 판단+독자·말투, 기존22, 15 흡수). 실습1 '맥락 보완' 본장. lesson-plan §5 보완 질문 표(대상/독자/말투/공개불가)를 선택지 카드로. 장면 7(사람이 검토).",
+  },
+  {
+    no: 17, section: "첫 페이지", layout: "shot",
+    head: "먼저 한국어로\n읽히게 만듭니다",
+    points: [
+      "이름 또는 제목",
+      "한 줄 소개 + 3줄 소개문",
+      "메뉴 · 활동 · 작품 소개",
+      "위치 · 일정 · 문의 자리",
+      "대표 이미지 자리",
+    ],
+    url: "내 노트북 · index.html",
+    shot: ASSETS.demoKo,
+    alt: "달밤공방 한국어 첫 페이지 데모",
+    note: "심사표 새17(한국어 첫 페이지, 기존23, 24 흡수). 실습2 안내 본장. MVP 기준 + 6요소. pageMock → 데모 index.html 실캡처(달밤공방). lesson-plan §6 1:25-1:30. 예쁜 완성본보다 보낼 수 있는 첫 초안.",
+  },
+  {
+    no: 18, section: "공개", layout: "cards",
+    title: "공개 버튼 앞에서는, 사람이 먼저입니다",
+    lead: "AI가 잘 써도 공개할지 말지는 사람이 정합니다 — 올리기 전 여섯 가지만.",
+    cards: [
+      { no: "1", title: "휴대폰 번호", desc: "본문에 노출됐는지" },
+      { no: "2", title: "집 주소", desc: "정확한 위치가\n그대로 적혔는지" },
+      { no: "3", title: "얼굴 사진", desc: "공개해도 되는\n사진인지" },
+      { no: "4", title: "가격", desc: "바뀔 수 있는 금액을\n그대로 적었는지" },
+      { no: "5", title: "대상 · 제목", desc: "누구에게 보이는\n페이지인지" },
+      { no: "6", title: "모바일", desc: "휴대폰에서\n읽히는지" },
+    ],
+    foot: "공개는 되돌리기 어렵습니다 — <em>한 번만 사람이 읽고 넘어갑니다</em>.",
+    footHtml: '공개는 되돌리기 어렵습니다 — <em>한 번만 사람이 읽고 넘어갑니다</em>.',
+    note: "심사표 새18(공개 전 사람 체크, 기존25, 16 흡수). 실습2 '빠른 체크' 본장. 같은 체크를 한 번만, 제때. lesson-plan §7 1:45-1:50 + §5 공개 불가 정보. 장면 7.",
+  },
+  {
+    no: 19, section: "공개", layout: "cards",
+    title: "완성보다 먼저, 한 번 올립니다",
+    lead: "여기서 올려야 뒤에서 고친 결과가 실제 링크에 반영되는 걸 봅니다. 공개 = 중간 전환점.",
+    cards: [
+      { no: "길 1", title: "본인 GitHub Pages", desc: "내 저장소에 올려\n아이디.github.io 주소로 공개" },
+      { no: "길 2", title: "수업 갤러리", desc: "HTML을 강사에게 보내\n수업 갤러리 주소로 공개" },
+    ],
+    foot: "두 길은 대등합니다 — <em>어느 쪽이든 링크 하나가 생기면 성공</em>입니다.",
+    footHtml: '두 길은 대등합니다 — <em>어느 쪽이든 링크 하나가 생기면 성공</em>입니다.',
+    note: "심사표 새19(1차 공개 두 경로, 기존26, 30 흡수). 지침: GitHub Pages와 수업 갤러리를 대등한 두 경로로(우회·안전망 프레임 금지). 척추 '현실 제약'. lesson-plan §7 1:50-1:54.",
+  },
+  {
+    no: 20, section: "GitHub Pages", layout: "steps",
+    title: "GitHub에 파일 올리기 — 화면 순서",
+    lead: "Git을 배우지 않습니다. 저장소 화면에서 이 버튼들을 차례로 누릅니다.",
+    steps: [
+      { code: "Add file", note: "저장소 오른쪽 위\n초록 버튼 옆" },
+      { code: "Upload files", note: "펼쳐진 메뉴에서\n두 번째 항목" },
+      { label: "파일 끌어다 놓기", note: "index.html을\n네모 칸 안으로" },
+      { code: "Commit changes", note: "맨 아래 초록 버튼\n— 올리기 완료" },
+    ],
+    banner: "이 슬라이드는 참조 카드입니다 — 실제 클릭은 강사 화면을 함께 따라갑니다.",
+    bannerTag: "강사 시연",
+    note: "심사표 새20(GitHub 업로드, 기존27). 실캡처 불가(로그인 화면) → 정밀 안내도. 지침: Add file → Upload files → 파일 끌어다 놓기 → Commit changes. 큰 글씨 라벨. 빔 가독성. lesson-plan §7 1:54-2:05.",
+  },
+  {
+    no: 21, section: "GitHub Pages", layout: "steps",
+    title: "Pages 켜기 — root에서 시작합니다",
+    lead: "발행에서 가장 자주 막히는 곳입니다. 확인할 것은 단 둘 — main, /(root).",
+    steps: [
+      { code: "Settings", note: "저장소 상단 메뉴\n맨 오른쪽 톱니" },
+      { code: "Pages", note: "왼쪽 목록에서\nPages 선택" },
+      { label: "Branch: main · /(root)", note: "두 칸을\nmain 과 /(root) 로" },
+      { code: "Save", note: "저장하면\n주소가 만들어진다" },
+    ],
+    banner: '아이디.github.io/저장소명',
+    bannerTag: "Your site is live",
+    bannerHtml: '잠시 뒤 "Your site is live" 배너와 주소 — <code>아이디.github.io/저장소명</code>',
+    note: "심사표 새21(Pages 설정, 기존28, 28A 흡수). 정밀 안내도. 지침: Settings → Pages → Branch: main + /(root) → Save → 'Your site is live' 배너 + 주소 형태. main/root 최다 실수 강조. lesson-plan §7.",
+  },
+  {
+    no: 22, section: "GitHub Pages", layout: "cards",
+    title: "404가 떠도, 바로 실패는 아닙니다",
+    lead: "오류는 멈춤이 아니라 확인 순서입니다 — 당황하지 말고 다섯 가지를 봅니다.",
+    cards: [
+      { no: "1", title: "파일 이름", desc: "index.html 이\n맞는지 (대소문자)" },
+      { no: "2", title: "Pages 설정", desc: "main · /(root) 로\n저장됐는지" },
+      { no: "3", title: "반영 시간", desc: "1~2분 기다린 뒤\n새로고침" },
+      { no: "4", title: "주소", desc: "저장소명까지\n정확히 입력했는지" },
+      { no: "5", title: "공개 여부", desc: "저장소가\nPublic 인지" },
+    ],
+    foot: "그래도 안 되면 — <em>수업 갤러리로 오늘의 링크를 남깁니다</em>.",
+    footHtml: '그래도 안 되면 — <em>수업 갤러리로 오늘의 링크를 남깁니다</em>.',
+    note: "심사표 새22(404 점검, 기존29). 발행 직후 가장 무서운 화면의 해독제. 점검 5개 = 당황 방지. 현장 버퍼와 페어. lesson-plan §7 2:05-2:10 + §10 버퍼.",
+  },
+  {
+    no: 23, section: "다시 수정", layout: "beforeAfter",
+    title: "이제 만드는 사람이 아니라, 고치는 사람입니다",
+    before: { tag: "전 — 한국어", shot: ASSETS.demoKo, cap: "한국어 한 장으로\n먼저 공개했다", alt: "달밤공방 한국어 초안" },
+    after:  { tag: "후 — 다국어", shot: ASSETS.demoMulti, cap: "영어 · 일본어를 더하고\n레이아웃을 정돈했다", alt: "달밤공방 다국어 수정본" },
+    note: "심사표 새23(다시 고치기, 기존31, 33 흡수). 정체성 전환 — 공개된 페이지를 고치는 사람. 데모 index.html 전(ko)/후(multi) 실캡처. 디자인 용어 대신 불편한 지점을 말로. lesson-plan §8 2:10-2:15.",
+  },
+  {
+    no: 24, section: "다국어 완성", layout: "cards",
+    title: "다국어로 넓히되, 사실은 사람이 확인합니다",
+    lead: "AI 번역은 빠른 출발점입니다. 공개 책임은 사람에게 남습니다.",
+    cards: [
+      { no: "AI", title: "번역은 초안", desc: "영어 · 중국어 · 일본어를\n빠르게 깔아준다" },
+      { no: "사람", title: "위치 · 연락처", desc: "주소와 문의처가\n맞는지 직접 확인" },
+      { no: "사람", title: "가격 · 일정", desc: "바뀔 수 있는 숫자는\n사람이 다시 본다" },
+    ],
+    foot: "번역은 출발이고, <em>사실 확인은 사람의 몫</em>입니다.",
+    footHtml: '번역은 출발이고, <em>사실 확인은 사람의 몫</em>입니다.',
+    note: "심사표 새24(다국어+사실 확인, 기존32). 최종 산출물(다국어)의 본장. 개인 작업 30분 동안 걸어둘 기준. 지침: 번역은 초안, 위치·가격·연락처는 사람이 확인 — 한 메시지. lesson-plan §8 모듈4.",
+  },
+  {
+    no: 25, section: "마무리", layout: "cards",
+    title: "이 링크를, 누구에게 먼저 보내볼까요",
+    lead: "오늘 잘했는지보다, 이 링크를 누구에게 보낼 수 있는지가 더 중요합니다.",
+    cards: [
+      { no: "지금", title: "옆자리와 링크 교환", desc: "맞바꿔 서로의 페이지를 열어\n— 서로의 첫 독자가 되어주기" },
+      { no: "오늘", title: "보낼 사람 한 명", desc: "첫 번째는 방금 링크를\n맞바꾼 옆자리" },
+      { no: "집에서", title: "다음 수정 한 가지", desc: "더 고치거나 공개하고\n싶은 항목 하나" },
+    ],
+    foot: "오늘의 끝은 완성이 아니라 <em>다음 행동</em>입니다.",
+    footHtml: '오늘의 끝은 완성이 아니라 <em>다음 행동</em>입니다.',
+    note: "심사표 새25(마무리+품앗이, 기존34). 지침: 품앗이(옆자리와 링크 맞바꿔 첫 독자) + 마무리 카드(쓸 문장/보낼 사람/다음 수정). 척추 '들고 나가는 것 1·3'. 장면 9. 유료 구독 안 팖. lesson-plan §9.",
+  },
+];
+
+const TOTAL = slides.length;
+
+/* ---------- 렌더 함수 ---------- */
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function nl2br(s) { return esc(s).replace(/\n/g, "<br>"); }
+
+function renderChrome(s) {
+  // 섹션 칩 + 페이지 번호 (모든 장 공통)
+  return `
+    <div class="section-chip">${esc(s.section)}</div>
+    <div class="page-num"><span class="cur">${s.no}</span><span class="sep">/</span><span class="tot">${TOTAL}</span></div>
+  `;
+}
+
+function renderCover(s) {
+  const outs = s.outputs.map((o, i) => `
+    <div class="output-chip c${i + 1}"><span class="step-no">${i + 1}</span>${esc(o)}</div>
+  `).join("");
+  return `
+    <div class="cover-grid">
+      <div class="cover-left">
+        <div class="cover-sub-chip">${esc(s.subtitle)}</div>
+        <h1 class="cover-title">${nl2br(s.title)}</h1>
+        <div class="cover-classname">${esc(s.className)}</div>
+        <div class="cover-outputs">${outs}</div>
+        <div class="cover-tail">${esc(s.tail)}</div>
+      </div>
+      <div class="poster-frame">
+        <img src="${s.poster}" alt="칠전팔팔학교 AI 클래스 포스터">
+      </div>
+    </div>
+  `;
+}
+
+function renderSplit(s) {
+  const tags = s.tags.map(t => `<span class="split-tag">${esc(t)}</span>`).join("");
+  return `
+    <div class="split-grid">
+      <div class="split-left">
+        <h2 class="split-headline">${nl2br(s.headline)}</h2>
+        <p class="split-sub">${nl2br(s.sub)}</p>
+        <div class="split-tags">${tags}</div>
+      </div>
+      <div class="browser-frame">
+        <div class="browser-bar">
+          <div class="browser-dots"><span></span><span></span><span></span></div>
+          <div class="browser-url">${esc(s.captureUrl)}</div>
+        </div>
+        <div class="browser-body"><img src="${s.capture}" alt="ChatGPT 실제 화면 캡처"></div>
+      </div>
+    </div>
+  `;
+}
+
+function renderFiles(s) {
+  const cards = s.files.map((f, i) => {
+    const lis = f.items.map(it => `<li><span class="bullet"></span><span>${esc(it)}</span></li>`).join("");
+    return `
+      <div class="file-card f${i + 1}">
+        <div class="filebar"><span class="fileicon">${esc(f.icon)}</span>${esc(f.name)}</div>
+        <div class="filedesc">${esc(f.desc)}</div>
+        <ul>${lis}</ul>
+      </div>
+    `;
+  }).join("");
+  return `
+    <div class="files-head">
+      <h2 class="h1">${esc(s.title)}</h2>
+      <p class="body" style="margin-top:18px;color:var(--ink-soft);">${esc(s.intro)}</p>
+    </div>
+    <div class="files-grid">${cards}</div>
+    <p class="files-foot">${esc(s.foot)}</p>
+  `;
+}
+
+function renderTodo(s) {
+  // 미완성 placeholder — 오버플로 없게, 화면에 내부 작업메모 노출 금지(중립 라벨만)
+  return `
+    <div class="ph-wrap">
+      <div class="ph-no">${String(s.no).padStart(2, "0")}</div>
+      <h2 class="ph-title">${esc(s.title)}</h2>
+      <div class="ph-badge"><span class="dot"></span>제작 중</div>
+    </div>
+  `;
+}
+
+function renderStatement(s) {
+  const head = s.headHtml || nl2br(s.head);
+  return `
+    <div class="stmt-wrap">
+      ${s.kicker ? `<div class="stmt-kicker">${esc(s.kicker)}</div>` : ""}
+      <h1 class="stmt-head">${head}</h1>
+      ${s.sub ? `<p class="stmt-sub">${nl2br(s.sub)}</p>` : ""}
+      ${s.tail ? `<div class="stmt-tail"><span class="arr">→</span>${esc(s.tail)}</div>` : ""}
+    </div>
+  `;
+}
+
+function renderAgenda(s) {
+  const cards = s.items.map((it, i) => `
+    <div class="agenda-card a${i + 1}">
+      <div class="a-time">${esc(it.time)}</div>
+      <div class="a-title">${nl2br(it.title)}</div>
+      <div class="a-desc">${nl2br(it.desc)}</div>
+    </div>
+  `).join("");
+  return `
+    <div class="top-head">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+      ${s.lead ? `<p class="lead">${nl2br(s.lead)}</p>` : ""}
+    </div>
+    <div class="agenda-grid">${cards}</div>
+    ${s.foot ? `<p class="agenda-foot">${s.footHtml || esc(s.foot)}</p>` : ""}
+  `;
+}
+
+function renderFlow(s) {
+  const node = (n, role) => {
+    let inner = "";
+    if (n.bubbles) inner = n.bubbles.map(b => `<div class="fn-bubble">${esc(b)}</div>`).join("");
+    else if (n.page) inner = `
+      <div class="fn-page">
+        <div class="fp-bar"><span></span><span></span><span></span></div>
+        <div class="fp-body">
+          <div class="fp-h"></div>
+          <div class="fp-langs">${n.page.map(l => `<b>${esc(l)}</b>`).join("")}</div>
+          <div class="fp-line"></div><div class="fp-line s"></div>
+        </div>
+      </div>`;
+    return `
+      <div class="flow-node ${role}">
+        <div class="fn-tag">${esc(n.tag)}</div>
+        <div class="fn-title">${nl2br(n.title)}</div>
+        ${inner}
+        ${n.desc ? `<div class="fn-desc">${nl2br(n.desc)}</div>` : ""}
+      </div>`;
+  };
+  return `
+    <div class="top-head" style="margin-bottom:0;">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+    </div>
+    <div class="flow-wrap">
+      ${node(s.before, "before")}
+      <div class="flow-arrow">→</div>
+      ${node(s.after, "after")}
+    </div>
+  `;
+}
+
+function renderCards(s) {
+  const n = s.cards.length;
+  // 2칸→2열, 3칸→3열, 4칸→2열2행, 5·6칸→3열(6은 3열2행). 세로 넘침 방지.
+  const cls = "c" + (n <= 2 ? 2 : n === 3 ? 3 : n === 4 ? 4 : 6);
+  const cards = s.cards.map((c, i) => `
+    <div class="gcard">
+      <div class="gc-head">
+        ${c.no ? `<span class="gc-no">${esc(c.no)}</span>` : ""}
+        <span class="gc-title">${nl2br(c.title)}</span>
+      </div>
+      ${c.desc ? `<p class="gc-desc">${nl2br(c.desc)}</p>` : ""}
+    </div>
+  `).join("");
+  return `
+    <div class="top-head">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+      ${s.lead ? `<p class="lead">${nl2br(s.lead)}</p>` : ""}
+    </div>
+    <div class="cards-grid ${cls}">${cards}</div>
+    ${s.foot ? `<p class="cards-foot">${s.footHtml || esc(s.foot)}</p>` : ""}
+  `;
+}
+
+function renderTracks(s) {
+  const letters = ["A", "B", "C"];
+  const cls = ["tA", "tB", "tC"];
+  const cards = s.tracks.map((t, i) => `
+    <div class="track ${cls[i]}">
+      <div class="t-band">
+        <span class="t-letter">${letters[i]}</span>
+        <span class="t-name">${nl2br(t.name)}</span>
+      </div>
+      <div class="t-cond">${nl2br(t.cond)}</div>
+      <div class="t-path"><span class="pin">출발 지점</span>${nl2br(t.path)}</div>
+    </div>
+  `).join("");
+  return `
+    <div class="top-head">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+      ${s.lead ? `<p class="lead">${nl2br(s.lead)}</p>` : ""}
+    </div>
+    <div class="tracks-grid">${cards}</div>
+  `;
+}
+
+function renderSteps(s) {
+  const cards = s.steps.map((st, i) => `
+    <div class="step-card">
+      <div class="s-no">${i + 1}</div>
+      <div class="s-label">${st.code ? `<code>${esc(st.code)}</code>` : esc(st.label)}</div>
+      ${st.note ? `<div class="s-note">${nl2br(st.note)}</div>` : ""}
+    </div>
+  `).join(`<div class="step-arrow">›</div>`);
+  return `
+    <div class="top-head" style="margin-bottom:0;">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+      ${s.lead ? `<p class="lead">${nl2br(s.lead)}</p>` : ""}
+    </div>
+    <div class="steps-wrap">
+      <div class="steps-row">${cards}</div>
+      ${s.banner ? `<div class="steps-banner"><span class="live">${esc(s.bannerTag || "결과")}</span>${s.bannerHtml || esc(s.banner)}</div>` : ""}
+    </div>
+  `;
+}
+
+function renderShot(s) {
+  const lis = s.points.map(p => `<li><span class="n">✓</span><span>${esc(p)}</span></li>`).join("");
+  return `
+    <div class="shot-grid">
+      <div class="shot-left">
+        <h2 class="shot-head">${nl2br(s.head)}</h2>
+        <ul class="shot-list">${lis}</ul>
+      </div>
+      <div class="shot-frame-wrap">
+        <div class="shot-frame">
+          <div class="sb">
+            <div class="sb-dots"><span></span><span></span><span></span></div>
+            <div class="sb-url">${esc(s.url)}</div>
+          </div>
+          <div class="sb-body"><img src="${s.shot}" alt="${esc(s.alt || "데모 페이지 캡처")}"></div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderBeforeAfter(s) {
+  const col = (c, role) => `
+    <div class="ba-col ${role}">
+      <div class="ba-tag">${esc(c.tag)}</div>
+      <div class="ba-frame">
+        <div class="baf-bar"><span></span><span></span><span></span></div>
+        <div class="baf-body"><img src="${c.shot}" alt="${esc(c.alt || "")}"></div>
+      </div>
+      <div class="ba-cap">${nl2br(c.cap)}</div>
+    </div>`;
+  return `
+    <div class="top-head" style="margin-bottom:0;">
+      <h2 class="h1">${nl2br(s.title)}</h2>
+    </div>
+    <div class="ba-grid">
+      ${col(s.before, "before")}
+      <div class="ba-mid">→</div>
+      ${col(s.after, "after")}
+    </div>
+  `;
+}
+
+const RENDERERS = {
+  cover: renderCover, split: renderSplit, files: renderFiles,
+  statement: renderStatement, agenda: renderAgenda, flow: renderFlow,
+  cards: renderCards, tracks: renderTracks, steps: renderSteps,
+  shot: renderShot, beforeAfter: renderBeforeAfter,
+  todo: renderTodo,
+};
+
+/* ---------- 빌드 ---------- */
+const stage = document.getElementById("stage");
+const progressFill = document.getElementById("progress-fill");
+
+function buildSlides() {
+  const frag = document.createDocumentFragment();
+  for (const s of slides) {
+    const el = document.createElement("section");
+    el.className = "slide";
+    el.dataset.no = s.no;
+    const theme = SECTION_THEME[s.section] || { a: "var(--lavender)", t: "var(--lavender-t)" };
+    el.style.setProperty("--accent", theme.a);
+    el.style.setProperty("--accent-t", theme.t);
+    const render = RENDERERS[s.layout] || renderTodo;
+    el.innerHTML = renderChrome(s) + render(s);
+    frag.appendChild(el);
+  }
+  // 진행 바는 stage에 이미 있으니 그 앞에 슬라이드 삽입
+  stage.insertBefore(frag, document.getElementById("progress-track"));
+}
+
+/* ---------- 내비게이션 ---------- */
+let current = 1;
+const slideEls = () => Array.from(stage.querySelectorAll(".slide"));
+
+function show(n) {
+  current = Math.max(1, Math.min(TOTAL, n));
+  const els = slideEls();
+  els.forEach(el => el.classList.toggle("is-active", Number(el.dataset.no) === current));
+  // 진행 바 색을 현재 섹션 주색에 맞춤
+  const activeEl = els.find(el => Number(el.dataset.no) === current);
+  if (activeEl) {
+    progressFill.style.background = activeEl.style.getPropertyValue("--accent") || "var(--accent)";
+    document.getElementById("progress-track").style.background = activeEl.style.getPropertyValue("--accent-t") || "var(--accent-t)";
+  }
+  progressFill.style.width = (current / TOTAL * 100) + "%";
+  if (history.replaceState) history.replaceState(null, "", "#" + current);
+  else location.hash = "#" + current;
+}
+function next() { show(current + 1); }
+function prev() { show(current - 1); }
+
+function parseHash() {
+  const h = parseInt(location.hash.replace("#", ""), 10);
+  return (Number.isFinite(h) && h >= 1 && h <= TOTAL) ? h : 1;
+}
+
+/* ---------- 스케일 ---------- */
+function fitStage() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const scale = Math.min(vw / 1600, vh / 900);
+  stage.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+}
+
+/* ---------- 입력 바인딩 ---------- */
+function bindNav() {
+  window.addEventListener("keydown", (e) => {
+    if (["ArrowRight", "PageDown", " ", "Spacebar"].includes(e.key)) { e.preventDefault(); next(); }
+    else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); prev(); }
+    else if (e.key === "Home") { e.preventDefault(); show(1); }
+    else if (e.key === "End") { e.preventDefault(); show(TOTAL); }
+  });
+  // 화면 좌/우 클릭
+  document.getElementById("viewport").addEventListener("click", (e) => {
+    if (e.clientX < window.innerWidth / 2) prev(); else next();
+  });
+  window.addEventListener("hashchange", () => {
+    const n = parseHash();
+    if (n !== current) show(n);
+  });
+  window.addEventListener("resize", fitStage);
+}
+
+/* ---------- audit 모드 ---------- */
+/* 전 장 순회: (a) 요소 overflow (scrollW>clientW+1 || scrollH>clientH+1)
+              (b) getBoundingClientRect가 스테이지(1600×900) 경계 이탈
+   이미지 로드 완료 후 실행. document.title = AUDIT:PASS | AUDIT:FAIL n건 */
+function runAudit() {
+  return new Promise((resolve) => {
+    document.body.classList.add("audit-mode");
+    // 스케일은 1로 고정해 좌표 검사를 단순화 (경계검사는 슬라이드 상대좌표라 translate 무관)
+    stage.style.transform = "translate(-50%, -50%) scale(1)";
+    const findings = [];
+    const els = slideEls();
+
+    // 검사 본체
+    function inspect() {
+      const EPS = 1;
+      for (const slideEl of els) {
+        const no = slideEl.dataset.no;
+        // 검사 대상 동안 잠시 표시
+        const wasActive = slideEl.classList.contains("is-active");
+        slideEl.style.display = "block";
+
+        const stageRect = { left: 0, top: 0, right: 1600, bottom: 900 };
+
+        // 모든 자손 요소 검사 (진행바 제외)
+        const descendants = slideEl.querySelectorAll("*");
+        for (const node of descendants) {
+          // (a) overflow
+          if (node.scrollWidth > node.clientWidth + EPS ||
+              node.scrollHeight > node.clientHeight + EPS) {
+            // 이미지 자체는 clientWidth/scrollWidth가 같으므로 보통 안 걸림.
+            // 텍스트 컨테이너 overflow만 잡힘.
+            const tag = node.tagName.toLowerCase();
+            const cls = (node.className && node.className.toString().slice(0, 40)) || "";
+            findings.push(`장 ${no}: <${tag}.${cls}> overflow — scroll ${node.scrollWidth}x${node.scrollHeight} vs client ${node.clientWidth}x${node.clientHeight}`);
+          }
+        }
+
+        // (a') 이중 안전망: 슬라이드 루트 자체의 scroll 크기가 스테이지(1600×900)를 넘는지.
+        // 세로 auto-grow 넘침이 (a)의 자손 검사에 안 걸리는 경우 대비.
+        if (slideEl.scrollWidth > 1600 + EPS || slideEl.scrollHeight > 900 + EPS) {
+          findings.push(`장 ${no}: <slide> 루트 넘침 — scroll ${slideEl.scrollWidth}x${slideEl.scrollHeight} vs 스테이지 1600x900`);
+        }
+
+        // (b) 경계 이탈 — 슬라이드 직계/주요 요소의 위치를 스테이지 좌표로 검사
+        // slideEl 자체가 1600x900 inset:0 이므로 그 안 요소의 offset 기반으로 검사
+        const slideRect = slideEl.getBoundingClientRect();
+        for (const node of descendants) {
+          const style = getComputedStyle(node);
+          if (style.display === "none" || style.visibility === "hidden") continue;
+          const r = node.getBoundingClientRect();
+          // 슬라이드 기준 상대 좌표
+          const relLeft = r.left - slideRect.left;
+          const relTop = r.top - slideRect.top;
+          const relRight = r.right - slideRect.left;
+          const relBottom = r.bottom - slideRect.top;
+          if (relLeft < stageRect.left - EPS || relTop < stageRect.top - EPS ||
+              relRight > stageRect.right + EPS || relBottom > stageRect.bottom + EPS) {
+            const tag = node.tagName.toLowerCase();
+            const cls = (node.className && node.className.toString().slice(0, 40)) || "";
+            findings.push(`장 ${no}: <${tag}.${cls}> 경계 이탈 — rel box [${relLeft.toFixed(0)}, ${relTop.toFixed(0)}, ${relRight.toFixed(0)}, ${relBottom.toFixed(0)}] vs 스테이지 [0,0,1600,900]`);
+          }
+        }
+
+        slideEl.style.display = wasActive ? "block" : "";
+      }
+
+      const pass = findings.length === 0;
+      document.title = pass ? "AUDIT:PASS" : ("AUDIT:FAIL " + findings.length + "건");
+      const report = document.getElementById("audit-report");
+      report.textContent =
+        (pass ? "AUDIT:PASS — 오버플로 0, 경계 이탈 0\n" : "AUDIT:FAIL " + findings.length + "건\n\n") +
+        findings.join("\n") +
+        "\n\n총 " + TOTAL + "장 검사 (스케일 1 기준, 스테이지 1600×900).";
+      resolve();
+    }
+
+    // 이미지 로드 완료 대기
+    const imgs = Array.from(stage.querySelectorAll("img"));
+    let pending = imgs.filter(im => !im.complete).length;
+    if (pending === 0) { inspect(); return; }
+    let settled = false;
+    imgs.forEach(im => {
+      if (im.complete) return;
+      const fin = () => { pending--; if (pending <= 0 && !settled) { settled = true; inspect(); } };
+      im.addEventListener("load", fin);
+      im.addEventListener("error", fin);
+    });
+    // 안전 타임아웃
+    setTimeout(() => { if (!settled) { settled = true; inspect(); } }, 4000);
+  });
+}
+
+/* ---------- 부트 ---------- */
+function boot() {
+  buildSlides();
+  fitStage();
+
+  const params = new URLSearchParams(location.search);
+  if (params.get("audit") === "1") {
+    runAudit();
+    return; // audit 모드에서는 내비게이션 비활성
+  }
+
+  bindNav();
+  show(parseHash());
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", boot);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>
