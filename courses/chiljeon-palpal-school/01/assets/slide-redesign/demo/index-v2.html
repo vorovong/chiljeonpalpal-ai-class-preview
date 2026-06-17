@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>달밤공방 — 동네 도자기 공방 | Dalbam Studio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    color: #2b2622;
+    background: #faf6ef;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 24px 64px; }
+
+  header {
+    padding: 56px 0 30px;
+    text-align: center;
+  }
+  header h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.01em; }
+  header .tagline { margin-top: 10px; font-size: 19px; color: #8a7f70; }
+
+  /* 언어 탭 — 다국어 추가 표시 */
+  .langs {
+    display: flex; gap: 8px; justify-content: center;
+    margin: 22px 0 4px;
+  }
+  .langs a {
+    padding: 7px 18px; font-size: 15px; font-weight: 700;
+    text-decoration: none; color: #6b6155;
+    border: 1.5px solid #d8cdb8; border-radius: 999px;
+    background: #fff;
+  }
+  .langs a.on { background: #f0d98a; border-color: #c9a94f; color: #4a3f23; }
+  .version-link { margin-top: 14px; }
+  .version-link a {
+    display: inline-block;
+    padding: 7px 16px;
+    border: 1.5px solid #d8cdb8;
+    border-radius: 999px;
+    background: #fff;
+    color: #5f5346;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .version-link a:hover { background: #f0d98a; border-color: #c9a94f; color: #4a3f23; }
+
+  .hero-img {
+    margin: 28px 0 8px;
+    height: 260px;
+    background: #efe7d8;
+    border: 1px solid #e1d5c1;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .hero-img img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 48%; }
+
+  .lang-page { display: none; }
+  .lang-page.on { display: block; }
+  .lang-block { border-top: 2px solid #e4ddd0; margin-top: 24px; padding-top: 8px; }
+  .lang-flag {
+    display: inline-block; margin-top: 22px;
+    font-size: 14px; font-weight: 800; letter-spacing: 0.06em;
+    color: #fff; background: #b89a52; padding: 4px 12px; border-radius: 4px;
+  }
+
+  section { margin-top: 30px; }
+  section h2 {
+    font-size: 22px; font-weight: 800; margin-bottom: 14px;
+    padding-bottom: 8px; border-bottom: 2px solid #e8c97a;
+    display: inline-block;
+  }
+  .intro p { font-size: 18px; margin-bottom: 8px; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 6px; }
+  .card {
+    background: #fff;
+    border: 1px solid #e8e0d2;
+    border-radius: 8px;
+    padding: 20px 22px;
+  }
+  .card h3 { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+  .card p { font-size: 16px; color: #6b6155; }
+  .card .meta { margin-top: 8px; font-size: 15px; color: #a08b66; font-weight: 600; }
+
+  .info dl { display: grid; grid-template-columns: 100px 1fr; gap: 10px 16px; font-size: 17px; }
+  .info dt { font-weight: 700; color: #8a7f70; }
+
+  footer {
+    margin-top: 48px; padding-top: 20px;
+    border-top: 2px solid #e4ddd0;
+    font-size: 14px; color: #a99a82; text-align: center;
+  }
+  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>달밤공방</h1>
+      <p class="tagline">밤에도 불이 켜진 작은 도자기 공방</p>
+      <nav class="langs">
+        <a data-lang-link="ko" class="on" href="?lang=ko">한국어</a>
+        <a data-lang-link="en" href="?lang=en">English</a>
+        <a data-lang-link="ja" href="?lang=ja">日本語</a>
+      </nav>
+      <p class="version-link"><a href="index.html">처음 만든 한국어판 보기</a></p>
+    </header>
+
+    <div class="hero-img">
+      <img src="../generated/dalbam-ai-poster-sample-small.jpg" alt="달밤공방 대표 이미지">
+    </div>
+
+    <!-- 한국어 -->
+    <div id="ko" class="lang-page on">
+      <section class="intro">
+        <h2>소개</h2>
+        <p>달밤공방은 퇴근길에 들러 흙을 만지는 동네 도자기 공방입니다.</p>
+        <p>완성품을 파는 곳이 아니라, 직접 만드는 시간을 파는 곳입니다.</p>
+        <p>처음 오신 분도 두 시간이면 컵 하나를 빚어 갑니다.</p>
+      </section>
+
+      <section>
+        <h2>클래스</h2>
+        <div class="cards">
+          <div class="card">
+            <h3>원데이 컵 만들기</h3>
+            <p>물레 없이 손으로 빚는 첫 수업.</p>
+            <p class="meta">2시간 · 주말 오후</p>
+          </div>
+          <div class="card">
+            <h3>저녁 물레 클래스</h3>
+            <p>퇴근 후 네 번에 걸쳐 그릇 한 세트를 만드는 과정.</p>
+            <p class="meta">4주 과정 · 평일 저녁</p>
+          </div>
+          <div class="card">
+            <h3>아이와 함께 흙놀이</h3>
+            <p>부모와 아이가 함께 작은 접시를 만드는 수업.</p>
+            <p class="meta">90분 · 토요일 오전</p>
+          </div>
+          <div class="card">
+            <h3>도자기 한 점 주문</h3>
+            <p>선물용 컵·접시를 색을 골라 맞춤 제작.</p>
+            <p class="meta">상담 후 제작</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="info">
+        <h2>위치 · 문의</h2>
+        <dl>
+          <dt>위치</dt><dd>[ 동네 이름 · 상세 주소 자리 ]</dd>
+          <dt>운영</dt><dd>화–일 13:00–21:00 (월 휴무)</dd>
+          <dt>문의</dt><dd>[ 전화 · 인스타그램 자리 ]</dd>
+        </dl>
+      </section>
+    </div>
+
+    <!-- English -->
+    <div id="en" class="lang-page lang-block">
+      <span class="lang-flag">EN · ENGLISH</span>
+      <section class="intro">
+        <h2>About</h2>
+        <p>Dalbam Studio is a small neighborhood pottery studio you can drop by after work.</p>
+        <p>We don't sell finished pieces — we sell the time to make them yourself.</p>
+        <p>Even first-timers leave with a cup of their own in about two hours.</p>
+      </section>
+      <section>
+        <h2>Classes</h2>
+        <div class="cards">
+          <div class="card"><h3>One-Day Cup</h3><p>Hand-build your first cup, no wheel needed.</p><p class="meta">2 hrs · weekend afternoons</p></div>
+          <div class="card"><h3>Evening Wheel Class</h3><p>Make a set of bowls over four evening sessions.</p><p class="meta">4 weeks · weekday evenings</p></div>
+        </div>
+      </section>
+      <section class="info">
+        <h2>Visit</h2>
+        <dl>
+          <dt>Where</dt><dd>[ neighborhood · address ]</dd>
+          <dt>Hours</dt><dd>Tue–Sun 1–9 PM (closed Mon)</dd>
+          <dt>Contact</dt><dd>[ phone · Instagram ]</dd>
+        </dl>
+      </section>
+    </div>
+
+    <!-- 日本語 -->
+    <div id="ja" class="lang-page lang-block">
+      <span class="lang-flag">JA · 日本語</span>
+      <section class="intro">
+        <h2>紹介</h2>
+        <p>タルバム工房は、仕事帰りに立ち寄って土に触れる町の陶芸工房です。</p>
+        <p>完成品を売るのではなく、自分で作る時間をお届けします。</p>
+        <p>初めての方も、2時間でカップを一つ作って帰れます。</p>
+      </section>
+      <section>
+        <h2>クラス</h2>
+        <div class="cards">
+          <div class="card"><h3>ワンデー カップ作り</h3><p>ろくろなしで手びねりする最初の体験。</p><p class="meta">2時間 · 週末の午後</p></div>
+          <div class="card"><h3>夜のろくろクラス</h3><p>仕事帰りに4回で器を作る正規コース。</p><p class="meta">4週間 · 平日の夜</p></div>
+        </div>
+      </section>
+      <section class="info">
+        <h2>アクセス</h2>
+        <dl>
+          <dt>場所</dt><dd>[ 地域名 · 住所 ]</dd>
+          <dt>営業</dt><dd>火–日 13:00–21:00（月休み）</dd>
+          <dt>お問合せ</dt><dd>[ 電話 · インスタグラム ]</dd>
+        </dl>
+      </section>
+    </div>
+
+    <footer>
+      © 달밤공방 · Dalbam Studio — 동네에서 만드는 도자기 공방
+    </footer>
+  </div>
+  <script>
+    const supported = ["ko", "en", "ja"];
+    const params = new URLSearchParams(location.search);
+    const current = supported.includes(params.get("lang")) ? params.get("lang") : "ko";
+    document.querySelectorAll(".lang-page").forEach(page => {
+      page.classList.toggle("on", page.id === current);
+    });
+    document.querySelectorAll("[data-lang-link]").forEach(link => {
+      link.classList.toggle("on", link.dataset.langLink === current);
+    });
+  </script>
+</body>
+</html>
