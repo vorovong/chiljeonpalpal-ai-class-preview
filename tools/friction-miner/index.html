@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>불편함 채굴기 | 칠전팔팔학교 AI 클래스</title>
+<style>
+  :root {
+    --paper: #fbf9f4;
+    --ink: #1a1814;
+    --ink-soft: #5a554c;
+    --white: #ffffff;
+    --pink: #ffb7d5;
+    --pink-t: #ffe3ef;
+    --mint: #a9e5c9;
+    --mint-t: #dcf3e8;
+    --butter: #ffdd78;
+    --butter-t: #fff1c2;
+    --lavender: #c9bcf2;
+    --blue-t: #ddf0ff;
+    --coral: #ff8f8f;
+    --border: 3px solid var(--ink);
+    --shadow: 5px 5px 0 var(--ink);
+    --radius: 8px;
+    --font: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    min-height: 100%;
+    background: #e9e4d6;
+  }
+
+  body {
+    min-height: 100vh;
+    margin: 0;
+    background:
+      linear-gradient(90deg, rgba(26, 24, 20, 0.055) 1px, transparent 1px),
+      linear-gradient(rgba(26, 24, 20, 0.055) 1px, transparent 1px),
+      var(--paper);
+    background-size: 30px 30px;
+    color: var(--ink);
+    font-family: var(--font);
+  }
+
+  button,
+  input,
+  textarea { font: inherit; }
+
+  button {
+    color: inherit;
+    cursor: pointer;
+  }
+
+  .shell {
+    width: min(1040px, calc(100% - 28px));
+    margin: 0 auto;
+    padding: 30px 0 40px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .brand,
+  .save-note {
+    display: inline-flex;
+    align-items: center;
+    border: var(--border);
+    border-radius: var(--radius);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-weight: 900;
+    word-break: keep-all;
+  }
+
+  .brand {
+    padding: 9px 13px;
+    background: var(--white);
+    font-size: 15px;
+  }
+
+  .save-note {
+    padding: 9px 12px;
+    background: var(--mint-t);
+    color: var(--ink-soft);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 210px;
+    gap: 18px;
+    align-items: end;
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(40px, 8vw, 80px);
+    line-height: 1.06;
+    letter-spacing: 0;
+    font-weight: 950;
+    word-break: keep-all;
+  }
+
+  .lead-card {
+    padding: 17px;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--butter);
+    box-shadow: var(--shadow);
+    font-size: 18px;
+    line-height: 1.35;
+    font-weight: 900;
+    word-break: keep-all;
+  }
+
+  .sub {
+    margin: 0 0 20px;
+    max-width: 760px;
+    color: var(--ink-soft);
+    font-size: 20px;
+    line-height: 1.45;
+    font-weight: 800;
+    word-break: keep-all;
+  }
+
+  .panel {
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--white);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: var(--border);
+    background: var(--pink-t);
+    font-size: 17px;
+    font-weight: 950;
+  }
+
+  .count-pill {
+    flex-shrink: 0;
+    padding: 5px 10px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--white);
+    font-size: 14px;
+    font-weight: 950;
+  }
+
+  .lens-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+    padding: 16px;
+    background: var(--paper);
+    border-bottom: var(--border);
+  }
+
+  .lens {
+    min-height: 118px;
+    padding: 13px 11px;
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--white);
+    text-align: left;
+    box-shadow: 3px 3px 0 transparent;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+
+  .lens:hover,
+  .lens:focus-visible {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--ink);
+    outline: none;
+  }
+
+  .lens.is-active {
+    background: var(--butter);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .lens-title {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 19px;
+    line-height: 1.15;
+    font-weight: 950;
+    word-break: keep-all;
+  }
+
+  .lens-desc {
+    display: block;
+    color: var(--ink-soft);
+    font-size: 13px;
+    line-height: 1.35;
+    font-weight: 800;
+    word-break: keep-all;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    border-bottom: var(--border);
+    background: var(--white);
+  }
+
+  #entry {
+    flex: 1;
+    min-width: 0;
+    min-height: 54px;
+    padding: 0 15px;
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  #entry:focus {
+    outline: 4px solid var(--blue-t);
+    outline-offset: 2px;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn,
+  .tag-btn {
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--white);
+    font-weight: 950;
+  }
+
+  .primary-btn {
+    min-height: 54px;
+    padding: 0 18px;
+    background: var(--mint);
+    box-shadow: 3px 3px 0 var(--ink);
+    font-size: 17px;
+    white-space: nowrap;
+  }
+
+  .secondary-btn,
+  .danger-btn {
+    min-height: 48px;
+    padding: 0 15px;
+    font-size: 15px;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .secondary-btn { background: var(--butter); }
+  .danger-btn { background: var(--pink-t); }
+
+  .hint {
+    padding: 8px 16px 14px;
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 800;
+    word-break: keep-all;
+    border-bottom: var(--border);
+  }
+
+  .empty {
+    padding: 36px 18px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 18px;
+    line-height: 1.4;
+    font-weight: 900;
+    word-break: keep-all;
+  }
+
+  .list {
+    display: grid;
+    gap: 9px;
+    padding: 14px;
+    background: var(--paper);
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 11px 12px;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--white);
+  }
+
+  .lens-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 8px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--butter-t);
+    font-size: 12px;
+    font-weight: 950;
+    white-space: nowrap;
+  }
+
+  .item-text {
+    min-width: 0;
+    font-size: 17px;
+    line-height: 1.35;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+  }
+
+  .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tag-btn {
+    padding: 5px 8px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .tag-btn.is-on.freq {
+    background: var(--mint);
+    color: var(--ink);
+  }
+
+  .tag-btn.is-on.annoy {
+    background: var(--coral);
+    color: var(--ink);
+  }
+
+  .delete-btn {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 20px;
+    font-weight: 950;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 15px 16px 16px;
+    border-top: var(--border);
+    background: var(--white);
+  }
+
+  .status {
+    color: var(--ink-soft);
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 900;
+    word-break: keep-all;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .copy-fallback {
+    display: none;
+    margin-top: 16px;
+    padding: 14px;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--butter-t);
+    box-shadow: var(--shadow);
+  }
+
+  .copy-fallback.is-open {
+    display: block;
+  }
+
+  .copy-fallback label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 950;
+  }
+
+  #fallbackText {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    padding: 12px;
+    border: 2.5px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--white);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%) translateY(80px);
+    max-width: min(520px, calc(100% - 28px));
+    padding: 13px 16px;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--mint);
+    box-shadow: var(--shadow);
+    font-size: 15px;
+    line-height: 1.35;
+    font-weight: 950;
+    opacity: 0;
+    transition: opacity 160ms ease, transform 160ms ease;
+    z-index: 5;
+    word-break: keep-all;
+  }
+
+  .toast.is-open {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 760px) {
+    .shell {
+      width: min(100% - 20px, 540px);
+      padding: 18px 0 28px;
+    }
+
+    .topbar,
+    .hero,
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .save-note {
+      text-align: left;
+      justify-content: flex-start;
+    }
+
+    .lead-card {
+      font-size: 16px;
+    }
+
+    .sub {
+      font-size: 17px;
+    }
+
+    .lens-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .lens {
+      min-height: 116px;
+      padding: 11px 10px;
+    }
+
+    .lens-title {
+      font-size: 17px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      padding: 12px;
+    }
+
+    .item {
+      grid-template-columns: 1fr;
+      align-items: start;
+    }
+
+    .item-actions {
+      justify-content: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .footer-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      justify-content: stretch;
+    }
+
+    .secondary-btn,
+    .danger-btn {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lens,
+    .toast {
+      transition: none;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topbar">
+      <div class="brand">칠전팔팔학교 AI 클래스</div>
+      <div class="save-note">입력한 내용은 이 브라우저에만 저장됩니다.</div>
+    </div>
+
+    <section class="hero" aria-labelledby="page-title">
+      <h1 id="page-title">불편함 채굴기</h1>
+      <div class="lead-card">한 가지를 깊게 고민하지 말고, 떠오르는 귀찮음을 짧게 여러 개 꺼냅니다.</div>
+    </section>
+
+    <p class="sub">형식 신경 쓰지 말고 엔터로 쌓아보세요. 나중에 AI가 분류합니다.</p>
+
+    <section class="panel" aria-label="불편함 입력 도구">
+      <div class="panel-head">
+        <span>렌즈를 누르고 짧게 적기</span>
+        <span class="count-pill"><span id="count">0</span>개 적음</span>
+      </div>
+
+      <div class="lens-grid" id="lenses"></div>
+
+      <div class="input-row">
+        <input id="entry" type="text" placeholder="렌즈를 하나 골라보세요" autocomplete="off">
+        <button class="primary-btn" id="add" type="button">추가</button>
+      </div>
+      <p class="hint">엔터로 빠르게 추가합니다. 완성된 문장이 아니어도 됩니다.</p>
+
+      <div class="empty" id="empty">아직 비어 있어요. 위 렌즈 하나를 눌러 기억을 긁어보세요.</div>
+      <div class="list" id="list" aria-live="polite"></div>
+
+      <div class="footer">
+        <div class="status" id="status">자주 반복되거나 짜증나는 항목만 표시해도 됩니다.</div>
+        <div class="footer-actions">
+          <button class="secondary-btn" id="copy" type="button">AI에게 보낼 문장 복사</button>
+          <button class="danger-btn" id="clear" type="button">전체 삭제</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="copy-fallback" id="copyFallback" aria-label="복사용 텍스트">
+      <label for="fallbackText">복사가 막히면 아래 내용을 직접 복사하세요.</label>
+      <textarea id="fallbackText" readonly></textarea>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  const STORAGE_KEY = "chiljeonpalpal:friction-miner:v1";
+  const lenses = [
+    {
+      key: "시간순",
+      title: "시간순",
+      desc: "오늘 하루를 아침부터 훑어봅니다.",
+      placeholder: "아침에 일어나서 → 노트북 켜고 → 그 다음 뭐 했더라?"
+    },
+    {
+      key: "한숨/짜증",
+      title: "한숨/짜증",
+      desc: "“또 이거야?” 싶었던 순간.",
+      placeholder: "이번 주에 ‘또 이거야?’ 하며 한숨 쉰 순간은?"
+    },
+    {
+      key: "복붙·옮김",
+      title: "복붙·옮김",
+      desc: "여기서 저기로 옮긴 일.",
+      placeholder: "한 곳에서 긁어 다른 데 붙여넣은 일은?"
+    },
+    {
+      key: "남 시키고픔",
+      title: "남 시키고픔",
+      desc: "누가 대신 해줬으면 한 일.",
+      placeholder: "누가 좀 대신 해줬으면 했던 잡일은?"
+    },
+    {
+      key: "자꾸 미룸",
+      title: "자꾸 미룸",
+      desc: "계속 뒤로 밀리는 일.",
+      placeholder: "귀찮아서 계속 뒤로 미루는 일은?"
+    }
+  ];
+
+  let activeLens = null;
+  let items = [];
+  let nextId = 1;
+  let toastTimer = null;
+
+  const lensWrap = document.getElementById("lenses");
+  const entry = document.getElementById("entry");
+  const addButton = document.getElementById("add");
+  const list = document.getElementById("list");
+  const empty = document.getElementById("empty");
+  const count = document.getElementById("count");
+  const status = document.getElementById("status");
+  const copyButton = document.getElementById("copy");
+  const clearButton = document.getElementById("clear");
+  const toast = document.getElementById("toast");
+  const fallback = document.getElementById("copyFallback");
+  const fallbackText = document.getElementById("fallbackText");
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add("is-open");
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      toast.classList.remove("is-open");
+    }, 2200);
+  }
+
+  function save() {
+    const payload = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      items,
+      nextId
+    };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      status.textContent = "브라우저 저장이 막혀 있습니다. 복사하기 전까지 창을 닫지 마세요.";
+    }
+  }
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const payload = JSON.parse(raw);
+      if (!payload || !Array.isArray(payload.items)) return;
+      items = payload.items.filter(item => item && typeof item.text === "string");
+      nextId = Number(payload.nextId) || (items.reduce((max, item) => Math.max(max, Number(item.id) || 0), 0) + 1);
+    } catch (error) {
+      items = [];
+      nextId = 1;
+    }
+  }
+
+  function pickLens(index) {
+    activeLens = index;
+    Array.from(lensWrap.children).forEach((child, childIndex) => {
+      child.classList.toggle("is-active", childIndex === index);
+      child.setAttribute("aria-pressed", childIndex === index ? "true" : "false");
+    });
+    entry.placeholder = lenses[index].placeholder;
+    entry.focus();
+  }
+
+  function renderLenses() {
+    lenses.forEach((lens, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "lens";
+      button.setAttribute("aria-pressed", "false");
+      button.innerHTML = `
+        <span class="lens-title">${escapeHtml(lens.title)}</span>
+        <span class="lens-desc">${escapeHtml(lens.desc)}</span>
+      `;
+      button.addEventListener("click", () => pickLens(index));
+      lensWrap.appendChild(button);
+    });
+  }
+
+  function renderItems() {
+    count.textContent = String(items.length);
+    empty.style.display = items.length ? "none" : "block";
+    list.innerHTML = "";
+
+    items.forEach(item => {
+      const lens = lenses.find(candidate => candidate.key === item.lens);
+      const row = document.createElement("article");
+      row.className = "item";
+      row.innerHTML = `
+        <span class="lens-tag">${escapeHtml(lens ? lens.title : "기타")}</span>
+        <div class="item-text">${escapeHtml(item.text)}</div>
+        <div class="item-actions">
+          <button class="tag-btn freq${item.freq ? " is-on" : ""}" type="button" data-action="freq">자주</button>
+          <button class="tag-btn annoy${item.annoy ? " is-on" : ""}" type="button" data-action="annoy">짜증</button>
+          <button class="delete-btn" type="button" data-action="delete" aria-label="항목 삭제">×</button>
+        </div>
+      `;
+      row.querySelector('[data-action="freq"]').addEventListener("click", () => {
+        item.freq = !item.freq;
+        save();
+        renderItems();
+      });
+      row.querySelector('[data-action="annoy"]').addEventListener("click", () => {
+        item.annoy = !item.annoy;
+        save();
+        renderItems();
+      });
+      row.querySelector('[data-action="delete"]').addEventListener("click", () => {
+        items = items.filter(candidate => candidate.id !== item.id);
+        save();
+        renderItems();
+      });
+      list.appendChild(row);
+    });
+  }
+
+  function addItem() {
+    const text = entry.value.trim();
+    if (!text) return;
+    if (activeLens === null) {
+      showToast("먼저 렌즈 하나를 눌러주세요.");
+      return;
+    }
+    items.push({
+      id: nextId++,
+      lens: lenses[activeLens].key,
+      text,
+      freq: false,
+      annoy: false,
+      createdAt: new Date().toISOString()
+    });
+    entry.value = "";
+    fallback.classList.remove("is-open");
+    save();
+    renderItems();
+    entry.focus();
+  }
+
+  function buildPrompt() {
+    const lines = items.map((item, index) => {
+      const tags = [item.lens];
+      if (item.freq) tags.push("자주");
+      if (item.annoy) tags.push("짜증");
+      return `${index + 1}. ${item.text} [${tags.join(", ")}]`;
+    });
+
+    return `방금 내가 적은 불편함들이야.
+
+각 항목을 보고 아래 세 가지로 나눠줘.
+1. ChatGPT나 Claude로 바로 줄일 수 있는 일
+2. Codex나 Claude Code 같은 작업대가 있으면 더 잘 되는 일
+3. 지금은 자동화하지 않아도 되는 일
+
+그리고 내가 가장 먼저 해볼 만한 것 2개만 골라줘.
+
+[목록]
+${lines.join("\n")}`;
+  }
+
+  async function copyPrompt() {
+    if (!items.length) {
+      showToast("먼저 불편함을 몇 개 적어주세요.");
+      return;
+    }
+    const prompt = buildPrompt();
+    fallbackText.value = prompt;
+
+    try {
+      await navigator.clipboard.writeText(prompt);
+      fallback.classList.remove("is-open");
+      showToast("복사됐습니다. ChatGPT나 Claude에 붙여넣어 보세요.");
+    } catch (error) {
+      fallback.classList.add("is-open");
+      fallbackText.focus();
+      fallbackText.select();
+      showToast("자동 복사가 막혔습니다. 아래 내용을 직접 복사하세요.");
+    }
+  }
+
+  function clearAll() {
+    if (!items.length) {
+      showToast("삭제할 항목이 없습니다.");
+      return;
+    }
+    const ok = window.confirm("이 브라우저에 저장된 입력을 모두 삭제할까요?");
+    if (!ok) return;
+    items = [];
+    nextId = 1;
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {
+      localStorage.setItem(STORAGE_KEY, "");
+    }
+    fallback.classList.remove("is-open");
+    renderItems();
+    showToast("전체 삭제했습니다.");
+  }
+
+  addButton.addEventListener("click", addItem);
+  entry.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addItem();
+    }
+  });
+  copyButton.addEventListener("click", copyPrompt);
+  clearButton.addEventListener("click", clearAll);
+
+  renderLenses();
+  load();
+  renderItems();
+})();
+</script>
+</body>
+</html>

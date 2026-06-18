@@ -232,6 +232,57 @@
     word-break: keep-all;
   }
 
+  .tool-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    max-width: 780px;
+    margin: 28px 0 0;
+    padding: 18px 20px;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--butter-t);
+    box-shadow: var(--shadow);
+  }
+
+  .tool-strip-copy {
+    display: grid;
+    gap: 5px;
+    word-break: keep-all;
+  }
+
+  .tool-strip-title {
+    font-size: 22px;
+    line-height: 1.2;
+    font-weight: 950;
+  }
+
+  .tool-strip-desc {
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1.35;
+    font-weight: 800;
+  }
+
+  .tool-strip-link {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 16px;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--mint);
+    box-shadow: 4px 4px 0 var(--ink);
+    color: var(--ink);
+    font-size: 16px;
+    font-weight: 950;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
   .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -395,6 +446,15 @@
       gap: 24px;
     }
 
+    .tool-strip {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .tool-strip-link {
+      width: 100%;
+    }
+
     .code-row {
       grid-template-columns: 1fr;
     }
@@ -421,6 +481,13 @@
     </section>
 
     <section class="course-grid" id="course-grid" aria-label="수업 목록"></section>
+    <section class="tool-strip" aria-label="수업 보조 도구">
+      <div class="tool-strip-copy">
+        <div class="tool-strip-title">불편함 채굴기</div>
+        <div class="tool-strip-desc">수업 중 짧은 귀찮음을 여러 개 꺼낼 때 씁니다.</div>
+      </div>
+      <a class="tool-strip-link" href="tools/friction-miner/">열기</a>
+    </section>
     <p class="next-note">다음 수업 포스터가 준비되면 이 자리에 이어집니다.</p>
   </main>
 

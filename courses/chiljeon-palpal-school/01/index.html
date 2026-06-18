@@ -4,19 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>칠전팔팔학교 AI 클래스 — 새 덱</title>
-<script>
-  (() => {
-    const courseId = "chiljeon-palpal-school-01";
-    const accessKey = `class-materials-access:${courseId}`;
-    const portalUrl = "../../../index.html?course=" + encodeURIComponent(courseId);
-    try {
-      const access = JSON.parse(localStorage.getItem(accessKey) || "null");
-      if (!access || access.ok !== true) location.replace(portalUrl);
-    } catch {
-      location.replace(portalUrl);
-    }
-  })();
-</script>
 <style>
   :root {
     /* 베이스 — 정본 토큰 */
@@ -314,7 +301,8 @@
   .browser-link:focus-visible,
   .poster-sample-link:focus-visible,
   .tool-action:focus-visible,
-  .flow-node-link:focus-visible {
+  .flow-node-link:focus-visible,
+  .launch-cta:focus-visible {
     outline: 5px solid var(--ink);
     outline-offset: 8px;
   }
@@ -526,6 +514,94 @@
     line-height: 1.45;
     word-break: keep-all;
     white-space: pre-line;
+  }
+
+  /* ===== layout: toolLaunch (별도 활동 도구 진입) ===== */
+  .launch-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 400px;
+    gap: 54px;
+    height: 100%;
+    align-items: center;
+    padding-top: 36px;
+    padding-right: 14px;
+  }
+  .launch-left {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .launch-title {
+    font-size: 72px;
+    font-weight: 900;
+    line-height: 1.18;
+    letter-spacing: -0.02em;
+    word-break: keep-all;
+    max-width: 12em;
+  }
+  .launch-sub {
+    max-width: 24em;
+    color: var(--ink-soft);
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.42;
+    word-break: keep-all;
+    white-space: pre-line;
+  }
+  .launch-cta {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 76px;
+    padding: 0 34px;
+    background: var(--butter);
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 34px;
+    font-weight: 950;
+    word-break: keep-all;
+  }
+  .launch-card {
+    background: var(--white);
+    border: var(--border);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    transform: rotate(1deg);
+  }
+  .launch-card-head {
+    padding: 18px 22px;
+    background: var(--accent);
+    border-bottom: var(--border);
+    font-size: 26px;
+    font-weight: 950;
+  }
+  .launch-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px 24px 28px;
+  }
+  .launch-lens {
+    padding: 14px 16px;
+    border: 2.5px solid var(--ink);
+    background: var(--accent-t);
+    font-size: 24px;
+    font-weight: 900;
+    word-break: keep-all;
+  }
+  .launch-lens:nth-child(2) { background: var(--mint-t); }
+  .launch-lens:nth-child(3) { background: var(--butter-t); }
+  .launch-lens:nth-child(4) { background: var(--pink-t); }
+  .launch-lens small {
+    display: block;
+    margin-top: 6px;
+    color: var(--ink-soft);
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 800;
   }
 
   /* ===== layout: promptImage (말이 이미지가 되는 장면) ===== */
@@ -1100,13 +1176,18 @@ const slides = [
     note: "한 장짜리 훅. ChatGPT·Claude 시각화와 이미지 생성 대표 활용을 본 뒤, 왜 AI를 써야 하는지 묶는 장. 의학 설명으로 길게 끌지 말고, 예전에는 생각이 결과물이 되려면 의지·방법론·시간·실패를 지나야 했는데 AI가 그 길을 줄였다는 비유만 입으로 처리.",
   },
   {
-    no: 7, section: "불편함 실험", layout: "prompt",
-    title: "평소에 불편했던 걸 그냥 편하게 적어봅니다.\n주절주절",
-    lines: [],
-    time: "각자 ChatGPT에 10분",
-    promptLabel: "ChatGPT에 붙여넣기",
-    prompt: "평소에 불편하고 귀찮은 일, 자동화하고 싶은 일을 말해볼게.\n읽어보고 바로 도와줄 수 있는 것부터 알려줘.",
-    note: "전원이 자기 ChatGPT에 불편하고 귀찮은 일, 자동화하고 싶은 일을 적는 10분 활동. 분류 질문을 던지지 않고, AI가 바로 도울 수 있는 후보를 보게 한다.",
+    no: 7, section: "불편함 실험", layout: "toolLaunch",
+    title: "한 가지를 깊게 고민하지 말고,\n떠오르는 귀찮음을 짧게 여러 개 꺼냅니다.",
+    sub: "입력한 내용은 이 브라우저에만 저장됩니다.\n마지막에 AI에게 보낼 문장으로 복사합니다.",
+    buttonLabel: "불편함 채굴기 열기",
+    link: "https://vorovong.github.io/chiljeonpalpal-ai-class-preview/tools/friction-miner/",
+    lenses: [
+      { title: "시간순", desc: "오늘 하루를 아침부터 훑기" },
+      { title: "한숨/짜증", desc: "또 이거야 싶었던 순간" },
+      { title: "복붙·옮김", desc: "여기서 저기로 옮긴 일" },
+      { title: "자꾸 미룸", desc: "계속 뒤로 밀리는 일" },
+    ],
+    note: "기존 ChatGPT 프롬프트 장을 불편함 채굴기 진입 장으로 교체. 목표는 좋은 문제 하나를 깊게 찾는 것이 아니라, 각자 도구를 열어 짧은 불편함 후보를 여러 개 꺼내고 복사해 ChatGPT/Claude에서 자동화 후보를 분류받는 것이다.",
   },
   {
     no: 8, section: "작업대", layout: "statement",
@@ -1451,6 +1532,28 @@ function renderPrompt(s) {
   `;
 }
 
+function renderToolLaunch(s) {
+  const lenses = (s.lenses || []).map(lens => `
+    <div class="launch-lens">
+      ${esc(lens.title || "")}
+      ${lens.desc ? `<small>${esc(lens.desc)}</small>` : ""}
+    </div>
+  `).join("");
+  return `
+    <div class="launch-grid">
+      <div class="launch-left">
+        <h2 class="launch-title">${nl2br(s.title)}</h2>
+        ${s.sub ? `<div class="launch-sub">${esc(s.sub)}</div>` : ""}
+        <a class="launch-cta" href="${esc(s.link || "#")}" target="_blank" rel="noopener noreferrer">${esc(s.buttonLabel || "열기")}</a>
+      </div>
+      <div class="launch-card">
+        <div class="launch-card-head">불편함 채굴기</div>
+        <div class="launch-card-body">${lenses}</div>
+      </div>
+    </div>
+  `;
+}
+
 function renderPromptImage(s) {
   const frame = `
         <div class="poster-sample-frame">
@@ -1662,6 +1765,7 @@ function renderBeforeAfter(s) {
 const RENDERERS = {
   cover: renderCover, split: renderSplit, files: renderFiles,
   statement: renderStatement, hook: renderHook, prompt: renderPrompt,
+  toolLaunch: renderToolLaunch,
   promptImage: renderPromptImage, agenda: renderAgenda, flow: renderFlow,
   cards: renderCards, tracks: renderTracks, steps: renderSteps, toolChoice: renderToolChoice,
   shot: renderShot, beforeAfter: renderBeforeAfter,
