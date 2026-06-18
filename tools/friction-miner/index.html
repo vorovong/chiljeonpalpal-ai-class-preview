@@ -606,6 +606,8 @@
   let items = [];
   let nextId = 1;
   let toastTimer = null;
+  let isComposing = false;
+  let addAfterComposition = false;
 
   const lensWrap = document.getElementById("lenses");
   const entry = document.getElementById("entry");
@@ -749,6 +751,13 @@
     entry.focus();
   }
 
+  function addItemAfterComposition() {
+    window.requestAnimationFrame(() => {
+      addItem();
+      addAfterComposition = false;
+    });
+  }
+
   function buildPrompt() {
     const lines = items.map((item, index) => {
       const tags = [item.lens];
@@ -810,9 +819,20 @@ ${lines.join("\n")}`;
   }
 
   addButton.addEventListener("click", addItem);
+  entry.addEventListener("compositionstart", () => {
+    isComposing = true;
+  });
+  entry.addEventListener("compositionend", () => {
+    isComposing = false;
+    if (addAfterComposition) addItemAfterComposition();
+  });
   entry.addEventListener("keydown", event => {
     if (event.key === "Enter") {
       event.preventDefault();
+      if (event.isComposing || isComposing || event.keyCode === 229) {
+        addAfterComposition = true;
+        return;
+      }
       addItem();
     }
   });
