@@ -151,6 +151,19 @@
     font-weight: 950;
   }
 
+  .panel-title {
+    min-width: 0;
+    word-break: keep-all;
+  }
+
+  .panel-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
   .count-pill {
     flex-shrink: 0;
     padding: 5px 10px;
@@ -239,8 +252,7 @@
 
   .primary-btn,
   .secondary-btn,
-  .danger-btn,
-  .tag-btn {
+  .danger-btn {
     border: 2.5px solid var(--ink);
     border-radius: var(--radius);
     background: var(--white);
@@ -332,22 +344,6 @@
     gap: 6px;
   }
 
-  .tag-btn {
-    padding: 5px 8px;
-    font-size: 12px;
-    color: var(--ink-soft);
-  }
-
-  .tag-btn.is-on.freq {
-    background: var(--mint);
-    color: var(--ink);
-  }
-
-  .tag-btn.is-on.annoy {
-    background: var(--coral);
-    color: var(--ink);
-  }
-
   .delete-btn {
     width: 30px;
     height: 30px;
@@ -358,17 +354,9 @@
     font-weight: 950;
   }
 
-  .footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 15px 16px 16px;
-    border-top: var(--border);
-    background: var(--white);
-  }
-
   .status {
+    min-height: 0;
+    padding: 0 16px 12px;
     color: var(--ink-soft);
     font-size: 14px;
     line-height: 1.35;
@@ -376,11 +364,8 @@
     word-break: keep-all;
   }
 
-  .footer-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+  .status:empty {
+    display: none;
   }
 
   .copy-fallback {
@@ -449,9 +434,15 @@
 
     .topbar,
     .hero,
-    .footer {
+    .panel-head {
       display: grid;
       grid-template-columns: 1fr;
+    }
+
+    .panel-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      justify-content: stretch;
     }
 
     .save-note {
@@ -493,17 +484,6 @@
       align-items: start;
     }
 
-    .item-actions {
-      justify-content: flex-start;
-      flex-wrap: wrap;
-    }
-
-    .footer-actions {
-      display: grid;
-      grid-template-columns: 1fr;
-      justify-content: stretch;
-    }
-
     .secondary-btn,
     .danger-btn {
       width: 100%;
@@ -534,8 +514,12 @@
 
     <section class="panel" aria-label="불편함 입력 도구">
       <div class="panel-head">
-        <span>렌즈를 누르고 짧게 적기</span>
-        <span class="count-pill"><span id="count">0</span>개 적음</span>
+        <span class="panel-title">렌즈를 누르고 짧게 적기</span>
+        <div class="panel-actions">
+          <span class="count-pill"><span id="count">0</span>개 적음</span>
+          <button class="secondary-btn" id="copy" type="button">AI에게 보낼 문장 복사</button>
+          <button class="danger-btn" id="clear" type="button">전체 삭제</button>
+        </div>
       </div>
 
       <div class="lens-grid" id="lenses"></div>
@@ -549,13 +533,7 @@
       <div class="empty" id="empty">아직 비어 있어요. 위 렌즈 하나를 눌러 기억을 긁어보세요.</div>
       <div class="list" id="list" aria-live="polite"></div>
 
-      <div class="footer">
-        <div class="status" id="status">자주 반복되거나 짜증나는 항목만 표시해도 됩니다.</div>
-        <div class="footer-actions">
-          <button class="secondary-btn" id="copy" type="button">AI에게 보낼 문장 복사</button>
-          <button class="danger-btn" id="clear" type="button">전체 삭제</button>
-        </div>
-      </div>
+      <div class="status" id="status" aria-live="polite"></div>
     </section>
 
     <section class="copy-fallback" id="copyFallback" aria-label="복사용 텍스트">
@@ -705,23 +683,12 @@
         <span class="lens-tag">${escapeHtml(lens ? lens.title : "기타")}</span>
         <div class="item-text">${escapeHtml(item.text)}</div>
         <div class="item-actions">
-          <button class="tag-btn freq${item.freq ? " is-on" : ""}" type="button" data-action="freq">자주</button>
-          <button class="tag-btn annoy${item.annoy ? " is-on" : ""}" type="button" data-action="annoy">짜증</button>
           <button class="delete-btn" type="button" data-action="delete" aria-label="항목 삭제">×</button>
         </div>
       `;
-      row.querySelector('[data-action="freq"]').addEventListener("click", () => {
-        item.freq = !item.freq;
-        save();
-        renderItems();
-      });
-      row.querySelector('[data-action="annoy"]').addEventListener("click", () => {
-        item.annoy = !item.annoy;
-        save();
-        renderItems();
-      });
       row.querySelector('[data-action="delete"]').addEventListener("click", () => {
         items = items.filter(candidate => candidate.id !== item.id);
+        status.textContent = "";
         save();
         renderItems();
       });
@@ -740,8 +707,6 @@
       id: nextId++,
       lens: lenses[activeLens].key,
       text,
-      freq: false,
-      annoy: false,
       createdAt: new Date().toISOString()
     });
     entry.value = "";
@@ -760,10 +725,7 @@
 
   function buildPrompt() {
     const lines = items.map((item, index) => {
-      const tags = [item.lens];
-      if (item.freq) tags.push("자주");
-      if (item.annoy) tags.push("짜증");
-      return `${index + 1}. ${item.text} [${tags.join(", ")}]`;
+      return `${index + 1}. ${item.text} [${item.lens}]`;
     });
 
     return `방금 내가 적은 불편함들이야.
@@ -790,6 +752,7 @@ ${lines.join("\n")}`;
     try {
       await navigator.clipboard.writeText(prompt);
       fallback.classList.remove("is-open");
+      status.textContent = "복사됐습니다. ChatGPT나 Claude에 붙여넣어 보세요.";
       showToast("복사됐습니다. ChatGPT나 Claude에 붙여넣어 보세요.");
     } catch (error) {
       fallback.classList.add("is-open");
@@ -815,6 +778,7 @@ ${lines.join("\n")}`;
     }
     fallback.classList.remove("is-open");
     renderItems();
+    status.textContent = "전체 삭제했습니다.";
     showToast("전체 삭제했습니다.");
   }
 
