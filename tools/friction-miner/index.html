@@ -60,36 +60,36 @@
   }
 
   .topbar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 18px;
+    justify-items: start;
+    gap: 10px;
+    margin-bottom: 30px;
   }
 
-  .brand,
-  .save-note {
+  .brand {
     display: inline-flex;
     align-items: center;
+    width: fit-content;
+    max-width: 100%;
+    padding: 9px 13px;
     border: var(--border);
     border-radius: var(--radius);
+    background: var(--white);
     box-shadow: 3px 3px 0 var(--ink);
+    font-size: 15px;
     font-weight: 900;
     word-break: keep-all;
   }
 
-  .brand {
-    padding: 9px 13px;
-    background: var(--white);
-    font-size: 15px;
-  }
-
   .save-note {
-    padding: 9px 12px;
-    background: var(--mint-t);
+    max-width: 100%;
     color: var(--ink-soft);
-    font-size: 13px;
-    text-align: right;
+    font-size: 14px;
+    line-height: 1.4;
+    font-weight: 850;
+    word-break: keep-all;
   }
 
   .hero {
@@ -448,7 +448,6 @@
       padding: 18px 0 28px;
     }
 
-    .topbar,
     .hero,
     .panel-head {
       display: grid;
@@ -473,11 +472,6 @@
       min-height: 48px;
       padding: 0 8px;
       font-size: 14px;
-    }
-
-    .save-note {
-      text-align: left;
-      justify-content: flex-start;
     }
 
     .lead-card {
