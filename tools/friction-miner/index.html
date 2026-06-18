@@ -308,6 +308,7 @@
   }
 
   .item {
+    position: relative;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 10px;
@@ -321,6 +322,9 @@
   .lens-tag {
     display: inline-flex;
     align-items: center;
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
     padding: 5px 8px;
     border: 2px solid var(--ink);
     border-radius: 999px;
@@ -345,13 +349,25 @@
   }
 
   .delete-btn {
-    width: 30px;
-    height: 30px;
-    border: 0;
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 2px solid transparent;
+    border-radius: 7px;
     background: transparent;
     color: var(--ink-soft);
-    font-size: 20px;
+    font-size: 18px;
+    line-height: 1;
     font-weight: 950;
+  }
+
+  .delete-btn:hover,
+  .delete-btn:focus-visible {
+    border-color: var(--ink);
+    background: var(--pink-t);
+    color: var(--ink);
+    outline: none;
   }
 
   .status {
@@ -441,8 +457,22 @@
 
     .panel-actions {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       justify-content: stretch;
+    }
+
+    .count-pill {
+      grid-column: 1 / -1;
+      justify-self: stretch;
+      text-align: center;
+    }
+
+    .panel-actions .secondary-btn,
+    .panel-actions .danger-btn {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 8px;
+      font-size: 14px;
     }
 
     .save-note {
@@ -482,11 +512,27 @@
     .item {
       grid-template-columns: 1fr;
       align-items: start;
+      padding: 13px 42px 13px 13px;
+      gap: 8px;
     }
 
-    .secondary-btn,
-    .danger-btn {
-      width: 100%;
+    .lens-tag {
+      max-width: calc(100% - 4px);
+    }
+
+    .item-actions {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+    }
+
+    .delete-btn {
+      width: 24px;
+      height: 24px;
+      border-color: var(--ink);
+      background: var(--white);
+      font-size: 15px;
+      box-shadow: 2px 2px 0 var(--ink);
     }
   }
 
